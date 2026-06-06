@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	html {
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	/* Safe area insets for notched/dynamic island phones */
+	body {
+		padding-bottom: env(safe-area-inset-bottom);
+	}
+}
+
+@layer components {
+	/* Touch-friendly minimum sizes */
+	.btn {
+		@apply min-h-touch min-w-touch inline-flex items-center justify-center rounded-lg px-4 font-medium transition-colors;
+	}
+
+	.btn-primary {
+		@apply btn bg-accent text-on-accent hover:bg-accent-muted active:scale-95;
+	}
+
+	.btn-ghost {
+		@apply btn text-on-muted hover:bg-white/10 active:scale-95;
+	}
+
+	.card {
+		@apply rounded-xl bg-surface-raised p-4;
+	}
+}

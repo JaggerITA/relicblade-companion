@@ -1,0 +1,2 @@
+PNG icons (192x192, 512x512, maskable 512x512) go here.
+Generate with: npx pwa-asset-generator static/favicon.svg static/icons --background "#1a1a2e" --padding "10%"

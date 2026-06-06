@@ -1,0 +1,39 @@
+# Node
+node_modules/
+.pnpm-store/
+
+# Build
+.svelte-kit/
+build/
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Vite
+vite.config.ts.timestamp-*
+
+# Editor
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# --- Project-specific: local documentation, not for the public repo ---
+.claude/
+Documents/
+documents/
+utility/
+wiki/
+CLAUDE.md
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
