@@ -30,9 +30,9 @@
 			initial={upgrade}
 			onsubmit={async (data) => {
 				await collectionStore.updateUpgrade({ ...upgrade, ...data });
-				goto('/collection');
+				goto(`${base}/collection`);
 			}}
-			oncancel={() => goto('/collection')}
+			oncancel={() => goto(`${base}/collection`)}
 		/>
 	{:else if collectionStore.loaded}
 		<p class="text-on-muted">Upgrade not found.</p>
@@ -47,7 +47,7 @@
 	{/snippet}
 	{#snippet actions()}
 		<Button variant="ghost" onclick={() => (confirmDelete = false)}>Cancel</Button>
-		<Button variant="danger" onclick={async () => { await collectionStore.deleteUpgrade(id); goto('/collection'); }}>
+		<Button variant="danger" onclick={async () => { await collectionStore.deleteUpgrade(id); goto(`${base}/collection`); }}>
 			Delete
 		</Button>
 	{/snippet}

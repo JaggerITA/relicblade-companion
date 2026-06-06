@@ -34,9 +34,9 @@
 			initial={character}
 			onsubmit={async (data) => {
 				await collectionStore.updateCharacter({ ...character, ...data });
-				goto('/collection');
+				goto(`${base}/collection`);
 			}}
-			oncancel={() => goto('/collection')}
+			oncancel={() => goto(`${base}/collection`)}
 		/>
 	{:else if collectionStore.loaded}
 		<p class="text-on-muted">Card not found.</p>
@@ -60,7 +60,7 @@
 			variant="danger"
 			onclick={async () => {
 				await collectionStore.deleteCharacter(id);
-				goto('/collection');
+				goto(`${base}/collection`);
 			}}
 		>
 			Delete

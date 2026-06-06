@@ -16,8 +16,8 @@
 	<UpgradeForm
 		onsubmit={async (data) => {
 			await collectionStore.addUpgrade(data);
-			goto('/collection');
+			goto(`${base}/collection`);
 		}}
-		oncancel={() => goto('/collection')}
+		oncancel={() => goto(`${base}/collection`)}
 	/>
 </div>
