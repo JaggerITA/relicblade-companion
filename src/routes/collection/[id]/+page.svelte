@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 	import CardReviewForm from '$lib/components/cardimport/CardReviewForm.svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
@@ -16,7 +17,7 @@
 <div class="p-4">
 	<header class="mb-6 flex items-center justify-between">
 		<div class="flex items-center gap-3">
-			<a href="/collection" class="text-on-muted hover:text-on-surface">‹</a>
+			<a href="{base}/collection" class="text-on-muted hover:text-on-surface">‹</a>
 			<h1 class="text-xl font-bold">Edit Card</h1>
 		</div>
 		<button
@@ -39,7 +40,7 @@
 		/>
 	{:else if collectionStore.loaded}
 		<p class="text-on-muted">Card not found.</p>
-		<a href="/collection" class="mt-4 inline-block text-accent">Back to collection</a>
+		<a href="{base}/collection" class="mt-4 inline-block text-accent">Back to collection</a>
 	{:else}
 		<p class="text-on-muted">Loading...</p>
 	{/if}

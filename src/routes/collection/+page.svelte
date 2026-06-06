@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { base } from '$app/paths';
 
 	type Tab = 'characters' | 'upgrades';
 
@@ -34,7 +35,7 @@
 	<header class="sticky top-0 z-10 bg-surface px-4 pb-2 pt-4">
 		<div class="mb-3 flex items-center justify-between">
 			<h1 class="text-xl font-bold">Collection</h1>
-			<a href="/settings" class="text-on-muted hover:text-on-surface" aria-label="Settings">⚙</a>
+			<a href="{base}/settings" class="text-on-muted hover:text-on-surface" aria-label="Settings">⚙</a>
 		</div>
 
 		<!-- Search -->
@@ -90,11 +91,11 @@
 						: 'Add upgrade cards from your collection.'}
 				</p>
 				{#if tab === 'characters'}
-					<a href="/collection/scan" class="btn-primary mb-3 w-48">📷 Scan a card</a>
-					<a href="/collection/new" class="btn-ghost w-48">✎ Enter manually</a>
+					<a href="{base}/collection/scan" class="btn-primary mb-3 w-48">📷 Scan a card</a>
+					<a href="{base}/collection/new" class="btn-ghost w-48">✎ Enter manually</a>
 					<p class="mt-6 text-xs">Cards are saved on this device.</p>
 				{:else}
-					<a href="/collection/upgrade/new" class="btn-primary w-48">+ Add upgrade</a>
+					<a href="{base}/collection/upgrade/new" class="btn-primary w-48">+ Add upgrade</a>
 				{/if}
 			</div>
 
@@ -106,7 +107,7 @@
 				{#each filtered as char (char.id)}
 					<li>
 						<a
-							href="/collection/{char.id}"
+							href="{base}/collection/{char.id}"
 							class="card flex items-center justify-between hover:bg-surface-overlay"
 						>
 							<div class="min-w-0">
@@ -129,7 +130,7 @@
 				{#each filtered as upg (upg.id)}
 					<li>
 						<a
-							href="/collection/upgrade/{upg.id}"
+							href="{base}/collection/upgrade/{upg.id}"
 							class="card flex items-center justify-between hover:bg-surface-overlay"
 						>
 							<div class="min-w-0">

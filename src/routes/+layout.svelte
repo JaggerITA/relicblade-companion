@@ -1,18 +1,20 @@
 <script lang="ts">
 	import '../app.css';
 	import { page } from '$app/stores';
+	import { base } from '$app/paths';
 
 	const navItems = [
-		{ href: '/', label: 'Home', icon: '🏠' },
-		{ href: '/collection', label: 'Cards', icon: '🗂' },
-		{ href: '/roster', label: 'Rosters', icon: '📋' },
-		{ href: '/game', label: 'Games', icon: '🎲' },
-		{ href: '/campaign', label: 'Camp.', icon: '🏕' }
+		{ path: '/', label: 'Home', icon: '🏠' },
+		{ path: '/collection', label: 'Cards', icon: '🗂' },
+		{ path: '/roster', label: 'Rosters', icon: '📋' },
+		{ path: '/game', label: 'Games', icon: '🎲' },
+		{ path: '/campaign', label: 'Camp.', icon: '🏕' }
 	] as const;
 
-	function isActive(href: string): boolean {
-		if (href === '/') return $page.url.pathname === '/';
-		return $page.url.pathname.startsWith(href);
+	function isActive(path: string): boolean {
+		const p = $page.url.pathname.replace(base, '') || '/';
+		if (path === '/') return p === '/';
+		return p.startsWith(path);
 	}
 </script>
 
@@ -28,12 +30,12 @@
 	>
 		{#each navItems as item}
 			<a
-				href={item.href}
+				href="{base}{item.path}"
 				class="flex flex-1 flex-col items-center justify-center gap-0.5 text-xs transition-colors
-					{isActive(item.href)
+					{isActive(item.path)
 					? 'text-accent'
 					: 'text-on-muted hover:text-on-surface'}"
-				aria-current={isActive(item.href) ? 'page' : undefined}
+				aria-current={isActive(item.path) ? 'page' : undefined}
 			>
 				<span class="text-lg leading-none" aria-hidden="true">{item.icon}</span>
 				<span>{item.label}</span>
