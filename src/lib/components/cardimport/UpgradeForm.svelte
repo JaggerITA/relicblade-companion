@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
 	import type { UpgradeSlotType } from '$lib/models/Character.js';
@@ -13,11 +14,12 @@
 
 	const SLOT_TYPES: UpgradeSlotType[] = ['weapon', 'potion', 'tactic', 'spell', 'item', 'other'];
 
-	let name = $state(initial.name ?? '');
-	let type = $state<UpgradeSlotType>(initial.type ?? 'weapon');
-	let cost = $state(initial.cost ?? 0);
-	let effect = $state(initial.effect ?? '');
-	let restrictions = $state(initial.restrictions?.join(', ') ?? '');
+	// untrack: intentionally capture prop values once to seed form state
+	let name = $state(untrack(() => initial.name ?? ''));
+	let type = $state<UpgradeSlotType>(untrack(() => initial.type ?? 'weapon'));
+	let cost = $state(untrack(() => initial.cost ?? 0));
+	let effect = $state(untrack(() => initial.effect ?? ''));
+	let restrictions = $state(untrack(() => initial.restrictions?.join(', ') ?? ''));
 	let errors = $state<Record<string, string>>({});
 
 	function validate(): boolean {

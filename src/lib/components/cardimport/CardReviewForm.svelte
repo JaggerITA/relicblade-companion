@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import type { Action, Character, UpgradeSlotType } from '$lib/models/Character.js';
 
@@ -14,22 +15,22 @@
 
 	const UPGRADE_SLOT_TYPES: UpgradeSlotType[] = ['weapon', 'potion', 'tactic', 'spell', 'item', 'other'];
 
-	// Form state — seeded from `initial` (OCR or existing card)
-	let name = $state(initial.name ?? '');
-	let faction = $state(initial.faction ?? '');
-	let cost = $state(initial.cost ?? 0);
-	let actionDice = $state(initial.stats?.actionDice ?? 0);
-	let speed = $state(initial.stats?.speed ?? 0);
-	let armor = $state(initial.stats?.armor ?? 0);
-	let health = $state(initial.stats?.health ?? 0);
-	let keywords = $state(initial.keywords?.join(', ') ?? '');
-	let notes = $state(initial.notes ?? '');
-	let upgradeSlots = $state<UpgradeSlotType[]>(initial.upgradeSlots ?? []);
-	let actions = $state<Action[]>(
+	// untrack: intentionally capture prop values once to seed form state
+	let name = $state(untrack(() => initial.name ?? ''));
+	let faction = $state(untrack(() => initial.faction ?? ''));
+	let cost = $state(untrack(() => initial.cost ?? 0));
+	let actionDice = $state(untrack(() => initial.stats?.actionDice ?? 1));
+	let speed = $state(untrack(() => initial.stats?.speed ?? 0));
+	let armor = $state(untrack(() => initial.stats?.armor ?? 0));
+	let health = $state(untrack(() => initial.stats?.health ?? 1));
+	let keywords = $state(untrack(() => initial.keywords?.join(', ') ?? ''));
+	let notes = $state(untrack(() => initial.notes ?? ''));
+	let upgradeSlots = $state<UpgradeSlotType[]>(untrack(() => initial.upgradeSlots ?? []));
+	let actions = $state<Action[]>(untrack(() =>
 		initial.actions?.length
 			? initial.actions
 			: [{ name: '', type: 'attack', activationValue: '', effect: '', bonus: '' }]
-	);
+	));
 
 	// Validation
 	let errors = $state<Record<string, string>>({});

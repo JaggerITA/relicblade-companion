@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { base } from '$app/paths';
 </script>
 
 <div class="p-4">
 	<header class="mb-4 flex items-center gap-3">
-		<a href="/" class="text-on-muted hover:text-on-surface">‹</a>
+		<a href="{base}/" class="text-on-muted hover:text-on-surface">‹</a>
 		<h1 class="text-xl font-bold">Settings</h1>
 	</header>
 
