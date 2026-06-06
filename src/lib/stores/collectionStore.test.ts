@@ -13,6 +13,7 @@ vi.mock('$lib/utils/id.js', () => ({
 import { dbDelete, dbGetAll, dbPut } from '$lib/utils/db.js';
 import { newId } from '$lib/utils/id.js';
 import { collectionStore } from './collectionStore.svelte.js';
+import type { UpgradeSlotType } from '$lib/models/Character.js';
 
 const baseCharacter = {
 	name: 'Test Knight',
@@ -21,7 +22,7 @@ const baseCharacter = {
 	stats: { actionDice: 3, speed: 5, armor: 3, health: 5 },
 	keywords: ['Hero'],
 	actions: [],
-	upgradeSlots: [] as const,
+	upgradeSlots: [] as UpgradeSlotType[],
 	notes: '',
 	source: 'manual' as const
 };

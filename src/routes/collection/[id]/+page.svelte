@@ -7,7 +7,7 @@
 	import Button from '$lib/components/shared/Button.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 
-	const id = $derived($page.params.id);
+	const id = $derived($page.params.id ?? '');
 	const character = $derived(collectionStore.getCharacter(id));
 	let confirmDelete = $state(false);
 

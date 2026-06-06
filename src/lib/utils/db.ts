@@ -40,7 +40,7 @@ interface RelicbladeDB extends DBSchema {
 	};
 }
 
-type StoreName = keyof RelicbladeDB;
+type StoreName = 'characters' | 'upgrades' | 'rosters' | 'games' | 'campaigns' | 'settings';
 
 let dbPromise: Promise<IDBPDatabase<RelicbladeDB>> | null = null;
 

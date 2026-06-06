@@ -10,23 +10,28 @@
 
 	$effect(() => { collectionStore.hydrate(); });
 
-	const filtered = $derived.by(() => {
+	const filteredChars = $derived.by(() => {
 		const q = search.toLowerCase();
-		if (tab === 'characters') {
-			return collectionStore.characters.filter((c) => {
-				const matchSearch = !q || c.name.toLowerCase().includes(q) || c.faction.toLowerCase().includes(q);
-				const matchFaction = !factionFilter || c.faction === factionFilter;
-				return matchSearch && matchFaction;
-			});
-		} else {
-			return collectionStore.upgrades.filter((u) => {
-				return !q || u.name.toLowerCase().includes(q) || u.type.toLowerCase().includes(q);
-			});
-		}
+		return collectionStore.characters.filter((c) => {
+			const matchSearch = !q || c.name.toLowerCase().includes(q) || c.faction.toLowerCase().includes(q);
+			const matchFaction = !factionFilter || c.faction === factionFilter;
+			return matchSearch && matchFaction;
+		});
+	});
+
+	const filteredUpgrades = $derived.by(() => {
+		const q = search.toLowerCase();
+		return collectionStore.upgrades.filter((u) =>
+			!q || u.name.toLowerCase().includes(q) || u.type.toLowerCase().includes(q)
+		);
 	});
 
 	const isEmpty = $derived(
 		tab === 'characters' ? collectionStore.characters.length === 0 : collectionStore.upgrades.length === 0
+	);
+
+	const noResults = $derived(
+		tab === 'characters' ? filteredChars.length === 0 : filteredUpgrades.length === 0
 	);
 </script>
 
@@ -99,12 +104,12 @@
 				{/if}
 			</div>
 
-		{:else if filtered.length === 0}
+		{:else if noResults}
 			<p class="py-8 text-center text-sm text-on-muted">No results for "{search}"</p>
 
 		{:else if tab === 'characters'}
 			<ul class="space-y-2">
-				{#each filtered as char (char.id)}
+				{#each filteredChars as char (char.id)}
 					<li>
 						<a
 							href="{base}/collection/{char.id}"
@@ -127,7 +132,7 @@
 
 		{:else}
 			<ul class="space-y-2">
-				{#each filtered as upg (upg.id)}
+				{#each filteredUpgrades as upg (upg.id)}
 					<li>
 						<a
 							href="{base}/collection/upgrade/{upg.id}"
@@ -150,7 +155,7 @@
 
 	<!-- FAB -->
 	<a
-		href={tab === 'characters' ? '/collection/new' : '/collection/upgrade/new'}
+		href={tab === 'characters' ? `${base}/collection/new` : `${base}/collection/upgrade/new`}
 		class="fixed bottom-20 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl text-white shadow-lg"
 		aria-label="Add {tab === 'characters' ? 'card' : 'upgrade'}"
 	>
