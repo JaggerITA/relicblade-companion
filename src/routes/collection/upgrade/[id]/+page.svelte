@@ -1,13 +1,13 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
-	import CardReviewForm from '$lib/components/cardimport/CardReviewForm.svelte';
+	import UpgradeForm from '$lib/components/cardimport/UpgradeForm.svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 
 	const id = $derived($page.params.id);
-	const character = $derived(collectionStore.getCharacter(id));
+	const upgrade = $derived(collectionStore.getUpgrade(id));
 	let confirmDelete = $state(false);
 
 	$effect(() => { collectionStore.hydrate(); });
@@ -17,51 +17,36 @@
 	<header class="mb-6 flex items-center justify-between">
 		<div class="flex items-center gap-3">
 			<a href="/collection" class="text-on-muted hover:text-on-surface">‹</a>
-			<h1 class="text-xl font-bold">Edit Card</h1>
+			<h1 class="text-xl font-bold">Edit Upgrade</h1>
 		</div>
-		<button
-			onclick={() => (confirmDelete = true)}
-			class="text-sm text-red-400 hover:text-red-300"
-			aria-label="Delete card"
-		>
+		<button onclick={() => (confirmDelete = true)} class="text-sm text-red-400 hover:text-red-300">
 			Delete
 		</button>
 	</header>
 
-	{#if character}
-		<CardReviewForm
-			initial={character}
+	{#if upgrade}
+		<UpgradeForm
+			initial={upgrade}
 			onsubmit={async (data) => {
-				await collectionStore.updateCharacter({ ...character, ...data });
+				await collectionStore.updateUpgrade({ ...upgrade, ...data });
 				goto('/collection');
 			}}
 			oncancel={() => goto('/collection')}
 		/>
 	{:else if collectionStore.loaded}
-		<p class="text-on-muted">Card not found.</p>
-		<a href="/collection" class="mt-4 inline-block text-accent">Back to collection</a>
+		<p class="text-on-muted">Upgrade not found.</p>
 	{:else}
 		<p class="text-on-muted">Loading...</p>
 	{/if}
 </div>
 
-<Modal
-	open={confirmDelete}
-	title="Delete card?"
-	onclose={() => (confirmDelete = false)}
->
+<Modal open={confirmDelete} title="Delete upgrade?" onclose={() => (confirmDelete = false)}>
 	{#snippet children()}
-		<p class="text-on-muted">This cannot be undone. The card will be removed from all rosters.</p>
+		<p class="text-on-muted">This cannot be undone.</p>
 	{/snippet}
 	{#snippet actions()}
 		<Button variant="ghost" onclick={() => (confirmDelete = false)}>Cancel</Button>
-		<Button
-			variant="danger"
-			onclick={async () => {
-				await collectionStore.deleteCharacter(id);
-				goto('/collection');
-			}}
-		>
+		<Button variant="danger" onclick={async () => { await collectionStore.deleteUpgrade(id); goto('/collection'); }}>
 			Delete
 		</Button>
 	{/snippet}
