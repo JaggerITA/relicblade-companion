@@ -445,7 +445,8 @@ interface ModelState {
 The `wiki/` folder is **not committed to this repo** (Zero Game Data Policy + IP respect).
 Each contributor generates it locally from their own Relicblade PDFs using the extraction
 scripts in `utility/build_wiki.py` (requires PyMuPDF) or `utility/build_wiki_ocr.py`
-(adds Tesseract OCR for image-based pages). See `utility/README.md` for setup instructions.
+(adds Tesseract OCR for image-based pages). The `utility/` folder is local-only and not
+committed to this repo.
 
 Once generated, the wiki provides a structured reference for implementing game mechanics:
 
