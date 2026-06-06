@@ -25,13 +25,12 @@ vite.config.ts.timestamp-*
 .DS_Store
 Thumbs.db
 
-# --- Project-specific: local documentation, not for the public repo ---
+# --- Project-specific: local-only folders ---
 .claude/
 Documents/
 documents/
 utility/
 wiki/
-CLAUDE.md
 
 # Logs
 *.log
