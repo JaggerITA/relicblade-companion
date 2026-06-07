@@ -1,3 +1,12 @@
+export type SpecialistType = 'chemist' | 'artisan' | 'smith' | 'scribe';
+export type SpecialistLevel = 'novice' | 'journeyman' | 'master';
+
+export interface Specialist {
+	type: SpecialistType;
+	level: SpecialistLevel;
+	influencePaid: number;
+}
+
 export interface CharacterCampaignState {
 	characterId: string;
 	heroicTraits: string[];
@@ -24,6 +33,7 @@ export interface Campaign {
 	name: string;
 	rosterId: string;
 	gold: number;
+	specialists: Specialist[];
 	matches: MatchRecord[];
 	createdAt: string;
 	updatedAt: string;
