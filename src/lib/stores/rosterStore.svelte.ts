@@ -45,7 +45,10 @@ function createRosterStore() {
 	}
 
 	async function persist(roster: Roster): Promise<Roster> {
-		const updated = { ...recomputeInfluence(roster), updatedAt: new Date().toISOString() };
+		// $state.snapshot() converts reactive Svelte proxies to plain objects —
+		// roster comes from the $state array, and IndexedDB cannot clone proxies.
+		const plain = $state.snapshot(roster) as Roster;
+		const updated = { ...recomputeInfluence(plain), updatedAt: new Date().toISOString() };
 		await dbPut('rosters', updated);
 		rosters = rosters.map((r) => (r.id === updated.id ? updated : r));
 		return updated;
