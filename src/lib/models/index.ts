@@ -1,4 +1,4 @@
-export type { Action, Character, UpgradeSlotType } from './Character.js';
+export type { Action, Character } from './Character.js';
 export type { Upgrade } from './Upgrade.js';
 export type { LimitMode, Roster, RosterEntry } from './Roster.js';
 export type { GamePhase, GameState, ModelState } from './GameState.js';

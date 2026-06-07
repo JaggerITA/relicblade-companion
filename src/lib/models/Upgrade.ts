@@ -1,9 +1,8 @@
-import type { UpgradeSlotType } from './Character.js';
-
 export interface Upgrade {
 	id: string;
 	name: string;
-	type: UpgradeSlotType;
+	/** Slot name as printed on the card, e.g. "Concealment", "Apply Herb" — matched against Character.upgradeSlots by exact name */
+	type: string;
 	cost: number;
 	effect: string;
 	restrictions: string[];

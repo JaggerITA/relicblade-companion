@@ -2,7 +2,6 @@
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
-	import type { UpgradeSlotType } from '$lib/models/Character.js';
 
 	interface Props {
 		initial?: Partial<Upgrade>;
@@ -12,11 +11,9 @@
 
 	let { initial = {}, onsubmit, oncancel }: Props = $props();
 
-	const SLOT_TYPES: UpgradeSlotType[] = ['weapon', 'potion', 'tactic', 'spell', 'item', 'other'];
-
 	// untrack: intentionally capture prop values once to seed form state
 	let name = $state(untrack(() => initial.name ?? ''));
-	let type = $state<UpgradeSlotType>(untrack(() => initial.type ?? 'weapon'));
+	let type = $state(untrack(() => initial.type ?? ''));
 	let cost = $state(untrack(() => initial.cost ?? 0));
 	let effect = $state(untrack(() => initial.effect ?? ''));
 	let restrictions = $state(untrack(() => initial.restrictions?.join(', ') ?? ''));
@@ -25,6 +22,7 @@
 	function validate(): boolean {
 		const e: Record<string, string> = {};
 		if (!name.trim()) e.name = 'Name is required';
+		if (!type.trim()) e.type = 'Slot type is required';
 		if (cost < 0) e.cost = 'Cost must be 0 or greater';
 		errors = e;
 		return Object.keys(e).length === 0;
@@ -34,7 +32,7 @@
 		if (!validate()) return;
 		onsubmit({
 			name: name.trim(),
-			type,
+			type: type.trim(),
 			cost,
 			effect,
 			restrictions: restrictions.split(',').map((r) => r.trim()).filter(Boolean),
@@ -58,16 +56,15 @@
 
 	<div class="grid grid-cols-2 gap-3">
 		<div>
-			<label class="mb-1 block text-sm" for="utype">Type *</label>
-			<select
+			<label class="mb-1 block text-sm" for="utype">Slot type * (as printed on the card)</label>
+			<input
 				id="utype"
+				type="text"
 				bind:value={type}
+				placeholder="e.g. Concealment"
 				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
-			>
-				{#each SLOT_TYPES as t}
-					<option value={t}>{t}</option>
-				{/each}
-			</select>
+			/>
+			{#if errors.type}<p class="mt-1 text-xs text-red-400">{errors.type}</p>{/if}
 		</div>
 		<div>
 			<label class="mb-1 block text-sm" for="ucost">Cost (inf.)</label>

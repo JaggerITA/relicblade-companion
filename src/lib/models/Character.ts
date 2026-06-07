@@ -1,5 +1,3 @@
-export type UpgradeSlotType = 'weapon' | 'potion' | 'tactic' | 'spell' | 'item' | 'other';
-
 export interface Action {
 	name: string;
 	type: 'attack' | 'ability' | 'spell' | 'defense' | 'other';
@@ -25,7 +23,8 @@ export interface Character {
 	};
 	keywords: string[];
 	actions: Action[];
-	upgradeSlots: UpgradeSlotType[];
+	/** Upgrade slot names as printed on the card, e.g. "Artisan", "Scroll" — user-defined, matched by exact name */
+	upgradeSlots: string[];
 	notes: string;
 	imageUri?: string;
 	source: 'manual' | 'ocr' | 'import';

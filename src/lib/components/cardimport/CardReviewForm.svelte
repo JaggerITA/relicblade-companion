@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import type { Action, Character, UpgradeSlotType } from '$lib/models/Character.js';
+	import type { Action, Character } from '$lib/models/Character.js';
 
 	interface Props {
 		initial?: Partial<Character>;
@@ -13,8 +13,6 @@
 
 	let { initial = {}, fieldConfidence = {}, onsubmit, oncancel }: Props = $props();
 
-	const UPGRADE_SLOT_TYPES: UpgradeSlotType[] = ['weapon', 'potion', 'tactic', 'spell', 'item', 'other'];
-
 	// untrack: intentionally capture prop values once to seed form state
 	let name = $state(untrack(() => initial.name ?? ''));
 	let faction = $state(untrack(() => initial.faction ?? ''));
@@ -25,7 +23,7 @@
 	let health = $state(untrack(() => initial.stats?.health ?? 1));
 	let keywords = $state(untrack(() => initial.keywords?.join(', ') ?? ''));
 	let notes = $state(untrack(() => initial.notes ?? ''));
-	let upgradeSlots = $state<UpgradeSlotType[]>(untrack(() => initial.upgradeSlots ?? []));
+	let upgradeSlots = $state(untrack(() => initial.upgradeSlots?.join(', ') ?? ''));
 	function blankAction(): Action {
 		return { name: '', type: 'attack', diceCount: undefined, activationValue: '', effect: '', bonus: '' };
 	}
@@ -64,18 +62,11 @@
 		actions = actions.filter((_, idx) => idx !== i);
 	}
 
-	function toggleSlot(slot: UpgradeSlotType) {
-		upgradeSlots = upgradeSlots.includes(slot)
-			? upgradeSlots.filter((s) => s !== slot)
-			: [...upgradeSlots, slot];
-	}
-
 	function handleSubmit() {
 		if (!validate()) return;
 		// $state.snapshot() converts reactive Svelte proxies to plain objects
 		// so IndexedDB's structured-clone algorithm can serialize them
 		const plainActions = $state.snapshot(actions) as Action[];
-		const plainSlots = $state.snapshot(upgradeSlots) as typeof upgradeSlots;
 		onsubmit({
 			name: name.trim(),
 			faction: faction.trim(),
@@ -83,7 +74,7 @@
 			stats: { actionDice, speed, armor, health },
 			keywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
 			actions: plainActions.filter((a) => a.name.trim()),
-			upgradeSlots: plainSlots,
+			upgradeSlots: upgradeSlots.split(',').map((s) => s.trim()).filter(Boolean),
 			notes,
 			source: initial.source ?? 'manual',
 			ocrConfidence: initial.ocrConfidence,
@@ -256,21 +247,14 @@
 		</div>
 
 		<div>
-			<p class="mb-2 text-sm">Upgrade slots</p>
-			<div class="flex flex-wrap gap-2">
-				{#each UPGRADE_SLOT_TYPES as slot}
-					<button
-						type="button"
-						onclick={() => toggleSlot(slot)}
-						class="rounded-full px-3 py-1 text-xs capitalize transition-colors
-							{upgradeSlots.includes(slot)
-								? 'bg-accent text-white'
-								: 'bg-surface-overlay text-on-muted hover:bg-white/10'}"
-					>
-						{slot}
-					</button>
-				{/each}
-			</div>
+			<label class="mb-1 block text-sm" for="upgradeSlots">Upgrade slots (comma-separated, as printed on the card)</label>
+			<input
+				id="upgradeSlots"
+				type="text"
+				bind:value={upgradeSlots}
+				placeholder="Artisan, Scroll, Scroll, ..."
+				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent {confidenceClass('upgradeSlots')}"
+			/>
 		</div>
 	</section>
 
