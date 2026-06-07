@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { base } from '$app/paths';
+	import type { Path } from '$lib/models/Character.js';
 
 	type Tab = 'characters' | 'upgrades';
 
 	let tab = $state<Tab>('characters');
 	let search = $state('');
-	let factionFilter = $state('');
+	let pathFilter = $state<Path | ''>('');
+
+	const PATHS: Path[] = ['advocate', 'adversary', 'neutral'];
 
 	$effect(() => { collectionStore.hydrate(); });
 
@@ -14,8 +17,8 @@
 		const q = search.toLowerCase();
 		return collectionStore.characters.filter((c) => {
 			const matchSearch = !q || c.name.toLowerCase().includes(q) || c.faction.toLowerCase().includes(q);
-			const matchFaction = !factionFilter || c.faction === factionFilter;
-			return matchSearch && matchFaction;
+			const matchPath = !pathFilter || c.path === pathFilter;
+			return matchSearch && matchPath;
 		});
 	});
 
@@ -55,7 +58,7 @@
 		<div class="mb-2 flex gap-2">
 			{#each (['characters', 'upgrades'] as Tab[]) as t}
 				<button
-					onclick={() => { tab = t; factionFilter = ''; }}
+					onclick={() => { tab = t; pathFilter = ''; }}
 					class="rounded-full px-3 py-1 text-sm capitalize transition-colors
 						{tab === t ? 'bg-accent text-white' : 'bg-surface-raised text-on-muted'}"
 				>
@@ -64,15 +67,15 @@
 			{/each}
 		</div>
 
-		<!-- Faction filter (characters only) -->
-		{#if tab === 'characters' && collectionStore.factions.length > 0}
+		<!-- Path filter (characters only) -->
+		{#if tab === 'characters' && collectionStore.characters.length > 0}
 			<select
-				bind:value={factionFilter}
-				class="w-full rounded-lg bg-surface-raised px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
+				bind:value={pathFilter}
+				class="w-full rounded-lg bg-surface-raised px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent capitalize"
 			>
-				<option value="">All factions</option>
-				{#each collectionStore.factions as f}
-					<option value={f}>{f}</option>
+				<option value="">All paths</option>
+				{#each PATHS as p}
+					<option value={p} class="capitalize">{p}</option>
 				{/each}
 			</select>
 		{/if}
@@ -118,7 +121,9 @@
 							<div class="min-w-0">
 								<p class="truncate font-semibold">{char.name}</p>
 								<p class="truncate text-sm text-on-muted">
-									{char.faction}{char.keywords.length ? ' · ' + char.keywords.join(', ') : ''}
+									<span class="capitalize">{char.path}</span>
+									{#if char.faction} · {char.faction}{/if}
+									{char.keywords.length ? ' · ' + char.keywords.join(', ') : ''}
 								</p>
 							</div>
 							<div class="ml-3 flex shrink-0 items-center gap-2">

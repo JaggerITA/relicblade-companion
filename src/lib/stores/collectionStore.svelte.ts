@@ -10,9 +10,6 @@ function createCollectionStore() {
 	let loaded = $state(false);
 
 	// Plain getters — Svelte tracks $state access in reactive contexts automatically
-	function getFactions() {
-		return [...new Set(characters.map((c) => c.faction).filter(Boolean))].sort();
-	}
 	function getCharactersById() {
 		return new Map(characters.map((c) => [c.id, c]));
 	}
@@ -105,7 +102,6 @@ function createCollectionStore() {
 		get characters() { return characters; },
 		get upgrades() { return upgrades; },
 		get loaded() { return loaded; },
-		get factions() { return getFactions(); },
 		get charactersById() { return getCharactersById(); },
 		get upgradesById() { return getUpgradesById(); },
 		hydrate,
