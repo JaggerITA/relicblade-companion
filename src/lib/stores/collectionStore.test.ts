@@ -17,6 +17,7 @@ import { collectionStore } from './collectionStore.svelte.js';
 const baseCharacter = {
 	name: 'Test Knight',
 	faction: 'Temple of Justice',
+	path: 'advocate' as const,
 	cost: 20,
 	stats: { actionDice: 3, speed: 5, armor: 3, health: 5 },
 	keywords: ['Hero'],

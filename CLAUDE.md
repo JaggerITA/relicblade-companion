@@ -218,6 +218,7 @@ interface Character {
   id: string;                    // UUID auto-generated
   name: string;
   faction: string;               // user-defined string
+  path: 'advocate' | 'adversary' | 'neutral';  // alignment, as printed on the card
   cost: number;                  // point cost (influence)
   stats: {
     actionDice: number;          // AD

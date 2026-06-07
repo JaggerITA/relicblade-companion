@@ -1,3 +1,6 @@
+/** A character's alignment: Advocate, Adversary, or Neutral (fieldable by either side) */
+export type Path = 'advocate' | 'adversary' | 'neutral';
+
 export interface Action {
 	name: string;
 	type: 'attack' | 'ability' | 'spell' | 'defense' | 'other';
@@ -14,6 +17,7 @@ export interface Character {
 	id: string;
 	name: string;
 	faction: string;
+	path: Path;
 	cost: number;
 	stats: {
 		actionDice: number;

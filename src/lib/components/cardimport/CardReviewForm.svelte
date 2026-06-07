@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import type { Action, Character } from '$lib/models/Character.js';
+	import type { Action, Character, Path } from '$lib/models/Character.js';
 
 	interface Props {
 		initial?: Partial<Character>;
@@ -16,6 +16,7 @@
 	// untrack: intentionally capture prop values once to seed form state
 	let name = $state(untrack(() => initial.name ?? ''));
 	let faction = $state(untrack(() => initial.faction ?? ''));
+	let path = $state<Path>(untrack(() => initial.path ?? 'neutral'));
 	let cost = $state(untrack(() => initial.cost ?? 0));
 	let actionDice = $state(untrack(() => initial.stats?.actionDice ?? 1));
 	let speed = $state(untrack(() => initial.stats?.speed ?? 0));
@@ -70,6 +71,7 @@
 		onsubmit({
 			name: name.trim(),
 			faction: faction.trim(),
+			path,
 			cost,
 			stats: { actionDice, speed, armor, health },
 			keywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
@@ -124,6 +126,19 @@
 				/>
 				{#if errors.cost}<p class="mt-1 text-xs text-red-400">{errors.cost}</p>{/if}
 			</div>
+		</div>
+
+		<div>
+			<label class="mb-1 block text-sm" for="path">Path *</label>
+			<select
+				id="path"
+				bind:value={path}
+				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent {confidenceClass('path')}"
+			>
+				<option value="advocate">Advocate</option>
+				<option value="adversary">Adversary</option>
+				<option value="neutral">Neutral</option>
+			</select>
 		</div>
 	</section>
 
