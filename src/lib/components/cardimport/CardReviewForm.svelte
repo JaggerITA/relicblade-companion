@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import { ACTION_TYPE_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
+	import { ACTION_TYPE_ICONS, STAT_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import type { Action, ActionType, Character, Path, UpgradeSlotType } from '$lib/models/Character.js';
 
 	const UPGRADE_SLOT_TYPES: { value: UpgradeSlotType; label: string }[] = [
@@ -177,8 +177,12 @@
 				{ id: 'armor', label: 'ARM', bind: armor, field: 'armor', error: undefined },
 				{ id: 'health', label: 'HP', bind: health, field: 'health', error: errors.health }
 			] as stat}
+				{@const StatIcon = STAT_ICONS[stat.id as keyof typeof STAT_ICONS]}
 				<div>
-					<label class="mb-1 block text-center text-xs text-on-muted" for={stat.id}>{stat.label}</label>
+					<label class="mb-1 flex items-center justify-center gap-1 text-center text-xs text-on-muted" for={stat.id}>
+						<StatIcon class="h-3.5 w-3.5" aria-hidden="true" />
+						{stat.label}
+					</label>
 					<input
 						id={stat.id}
 						type="number"

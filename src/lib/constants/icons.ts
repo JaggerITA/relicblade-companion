@@ -9,6 +9,10 @@ import Scroll from '@lucide/svelte/icons/scroll';
 import FlaskConical from '@lucide/svelte/icons/flask-conical';
 import Backpack from '@lucide/svelte/icons/backpack';
 import HandFist from '@lucide/svelte/icons/hand-fist';
+import Dices from '@lucide/svelte/icons/dices';
+import Wind from '@lucide/svelte/icons/wind';
+import ShieldHalf from '@lucide/svelte/icons/shield-half';
+import Heart from '@lucide/svelte/icons/heart';
 import type { LucideIcon } from '@lucide/svelte';
 import type { ActionType, UpgradeSlotType } from '$lib/models/Character.js';
 
@@ -45,3 +49,15 @@ export const UPGRADE_SLOT_TYPE_ICONS: Record<UpgradeSlotType, LucideIcon> = {
 	spell: Scroll,
 	item: Backpack
 };
+
+/**
+ * Generic outline icons for the four core stats (Card Anatomy: Action Dice,
+ * Speed, Armor, Health). Distinct glyphs from the action/upgrade icon sets
+ * above so the same shape never means two different things on one screen.
+ */
+export const STAT_ICONS = {
+	actionDice: Dices,
+	speed: Wind,
+	armor: ShieldHalf,
+	health: Heart
+} satisfies Record<'actionDice' | 'speed' | 'armor' | 'health', LucideIcon>;
