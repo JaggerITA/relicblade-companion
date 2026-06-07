@@ -26,10 +26,12 @@
 	let keywords = $state(untrack(() => initial.keywords?.join(', ') ?? ''));
 	let notes = $state(untrack(() => initial.notes ?? ''));
 	let upgradeSlots = $state<UpgradeSlotType[]>(untrack(() => initial.upgradeSlots ?? []));
+	function blankAction(): Action {
+		return { name: '', type: 'attack', diceCount: undefined, activationValue: '', effect: '', bonus: '' };
+	}
+
 	let actions = $state<Action[]>(untrack(() =>
-		initial.actions?.length
-			? initial.actions
-			: [{ name: '', type: 'attack', activationValue: '', effect: '', bonus: '' }]
+		initial.actions?.length ? initial.actions : [blankAction()]
 	));
 
 	// Validation
@@ -55,7 +57,7 @@
 	}
 
 	function addAction() {
-		actions = [...actions, { name: '', type: 'attack', activationValue: '', effect: '', bonus: '' }];
+		actions = [...actions, blankAction()];
 	}
 
 	function removeAction(i: number) {
@@ -190,13 +192,44 @@
 							<option value={t}>{t}</option>
 						{/each}
 					</select>
-					<input
-						type="text"
-						bind:value={action.activationValue}
-						placeholder="4+"
-						class="w-12 rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
-					/>
 					<button type="button" onclick={() => removeAction(i)} class="text-on-muted hover:text-on-surface" aria-label="Remove action">✕</button>
+				</div>
+				<div class="grid grid-cols-3 gap-2">
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-dice`}>Dice</label>
+						<input
+							id={`action-${i}-dice`}
+							type="number"
+							min="0"
+							value={action.diceCount ?? ''}
+							oninput={(e) => {
+								const v = (e.target as HTMLInputElement).value;
+								action.diceCount = v === '' ? undefined : parseInt(v) || 0;
+							}}
+							placeholder="e.g. 2"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-bonus`}>Bonus</label>
+						<input
+							id={`action-${i}-bonus`}
+							type="text"
+							bind:value={action.bonus}
+							placeholder="e.g. +3"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-activation`}>Activation</label>
+						<input
+							id={`action-${i}-activation`}
+							type="text"
+							bind:value={action.activationValue}
+							placeholder="e.g. 4+"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
 				</div>
 				<input
 					type="text"

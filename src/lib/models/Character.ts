@@ -3,8 +3,12 @@ export type UpgradeSlotType = 'weapon' | 'potion' | 'tactic' | 'spell' | 'item' 
 export interface Action {
 	name: string;
 	type: 'attack' | 'ability' | 'spell' | 'defense' | 'other';
+	/** Number of dice rolled for this action, e.g. 2 for "x2" on the card */
+	diceCount?: number;
+	/** Roll threshold to activate, e.g. "4+" */
 	activationValue?: string;
 	effect: string;
+	/** Modifier added to the roll, e.g. "+3" */
 	bonus?: string;
 }
 
