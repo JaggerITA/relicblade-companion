@@ -12,8 +12,8 @@ export default {
 					overlay: '#0f3460'
 				},
 				accent: {
-					DEFAULT: '#e94560',
-					muted: '#c73652'
+					DEFAULT: '#38bdf8',
+					muted: '#0ea5e9'
 				},
 				on: {
 					surface: '#e2e8f0',
