@@ -65,7 +65,6 @@
 	function validate(): boolean {
 		const e: Record<string, string> = {};
 		if (!name.trim()) e.name = 'Name is required';
-		if (!faction.trim()) e.faction = 'Faction is required';
 		if (cost < 0) e.cost = 'Cost must be 0 or greater';
 		if (actionDice < 1) e.actionDice = 'Action dice must be at least 1';
 		if (health < 1) e.health = 'Health must be at least 1';
@@ -131,7 +130,7 @@
 
 		<div class="grid grid-cols-2 gap-3">
 			<div>
-				<label class="mb-1 block text-sm" for="faction">Faction *</label>
+				<label class="mb-1 block text-sm" for="faction">Faction (optional)</label>
 				<input
 					id="faction"
 					type="text"
@@ -139,7 +138,6 @@
 					class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent {confidenceClass('faction')}"
 					placeholder="e.g. Temple of Justice"
 				/>
-				{#if errors.faction}<p class="mt-1 text-xs text-red-400">{errors.faction}</p>{/if}
 			</div>
 			<div>
 				<label class="mb-1 block text-sm" for="cost">Cost (inf.) *</label>
