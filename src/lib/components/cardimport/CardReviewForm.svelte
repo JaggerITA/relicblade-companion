@@ -1,7 +1,21 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import type { Action, ActionType, Character, Path } from '$lib/models/Character.js';
+	import type { Action, ActionType, Character, Path, UpgradeSlotType } from '$lib/models/Character.js';
+
+	const UPGRADE_SLOT_TYPES: { value: UpgradeSlotType; label: string }[] = [
+		{ value: 'weapon', label: 'Weapon' },
+		{ value: 'tactic', label: 'Tactic' },
+		{ value: 'potion', label: 'Potion' },
+		{ value: 'spell', label: 'Spell' },
+		{ value: 'item', label: 'Item' }
+	];
+
+	function countSlots(slots: UpgradeSlotType[]): Record<UpgradeSlotType, number> {
+		const counts: Record<UpgradeSlotType, number> = { weapon: 0, tactic: 0, potion: 0, spell: 0, item: 0 };
+		for (const slot of slots) counts[slot]++;
+		return counts;
+	}
 
 	const ACTION_TYPES: { value: ActionType; label: string }[] = [
 		{ value: 'melee-weapon', label: 'Melee Weapon' },
@@ -34,7 +48,9 @@
 	let health = $state(untrack(() => initial.stats?.health ?? 1));
 	let keywords = $state(untrack(() => initial.keywords?.join(', ') ?? ''));
 	let notes = $state(untrack(() => initial.notes ?? ''));
-	let upgradeSlots = $state(untrack(() => initial.upgradeSlots?.join(', ') ?? ''));
+	let upgradeSlotCounts = $state<Record<UpgradeSlotType, number>>(
+		untrack(() => countSlots(initial.upgradeSlots ?? []))
+	);
 	function blankAction(): Action {
 		return { name: '', type: 'melee-weapon', diceCount: undefined, activationValue: '', effect: '', bonus: '' };
 	}
@@ -86,7 +102,7 @@
 			stats: { actionDice, speed, armor, health },
 			keywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
 			actions: plainActions.filter((a) => a.name.trim()),
-			upgradeSlots: upgradeSlots.split(',').map((s) => s.trim()).filter(Boolean),
+			upgradeSlots: UPGRADE_SLOT_TYPES.flatMap(({ value }) => Array(upgradeSlotCounts[value]).fill(value)),
 			notes,
 			source: initial.source ?? 'manual',
 			ocrConfidence: initial.ocrConfidence,
@@ -272,14 +288,24 @@
 		</div>
 
 		<div>
-			<label class="mb-1 block text-sm" for="upgradeSlots">Upgrade slots (comma-separated, as printed on the card)</label>
-			<input
-				id="upgradeSlots"
-				type="text"
-				bind:value={upgradeSlots}
-				placeholder="Artisan, Scroll, Scroll, ..."
-				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent {confidenceClass('upgradeSlots')}"
-			/>
+			<span class="mb-1 block text-sm">Upgrade slots</span>
+			<p class="mb-2 text-xs text-on-muted">
+				How many of each slot icon does this character's inventory show?
+			</p>
+			<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+				{#each UPGRADE_SLOT_TYPES as t}
+					<div class="flex items-center justify-between gap-2 rounded-lg bg-surface-overlay px-3 py-2">
+						<label for={`slot-${t.value}`} class="text-sm">{t.label}</label>
+						<input
+							id={`slot-${t.value}`}
+							type="number"
+							min="0"
+							bind:value={upgradeSlotCounts[t.value]}
+							class="w-14 rounded bg-surface px-2 py-1 text-right text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+				{/each}
+			</div>
 		</div>
 	</section>
 

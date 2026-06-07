@@ -103,39 +103,39 @@ describe('influence totals (ADR-006 dual mode)', () => {
 
 describe('compatibleUpgrades', () => {
 	const upgradesById = new Map([
-		['scroll-1', makeUpgrade({ id: 'scroll-1', name: 'Fire Scroll', type: 'Scroll', restrictions: [] })],
-		['scroll-2', makeUpgrade({ id: 'scroll-2', name: 'Ice Scroll', type: 'Scroll', restrictions: [] })],
-		['artisan-1', makeUpgrade({ id: 'artisan-1', name: 'Carving Knife', type: 'Artisan', restrictions: [] })],
-		['cleric-amulet', makeUpgrade({ id: 'cleric-amulet', name: 'Holy Amulet', type: 'Scroll', restrictions: ['Cleric'] })]
+		['tactic-1', makeUpgrade({ id: 'tactic-1', name: 'Fire Scroll', type: 'tactic', restrictions: [] })],
+		['tactic-2', makeUpgrade({ id: 'tactic-2', name: 'Ice Scroll', type: 'tactic', restrictions: [] })],
+		['item-1', makeUpgrade({ id: 'item-1', name: 'Carving Knife', type: 'item', restrictions: [] })],
+		['cleric-amulet', makeUpgrade({ id: 'cleric-amulet', name: 'Holy Amulet', type: 'tactic', restrictions: ['Cleric'] })]
 	]);
 	const collection = [...upgradesById.values()];
 
 	it('only returns upgrades whose type matches an open slot', () => {
-		const character = makeCharacter({ upgradeSlots: ['Scroll'], keywords: [] });
+		const character = makeCharacter({ upgradeSlots: ['tactic'], keywords: [] });
 
 		const result = compatibleUpgrades(character, [], collection, upgradesById);
 
-		expect(result.map((u) => u.id).sort()).toEqual(['scroll-1', 'scroll-2']);
+		expect(result.map((u) => u.id).sort()).toEqual(['tactic-1', 'tactic-2']);
 	});
 
 	it('excludes already-equipped upgrades and types with no open slots left', () => {
-		const character = makeCharacter({ upgradeSlots: ['Scroll'], keywords: [] });
+		const character = makeCharacter({ upgradeSlots: ['tactic'], keywords: [] });
 
-		const result = compatibleUpgrades(character, ['scroll-1'], collection, upgradesById);
+		const result = compatibleUpgrades(character, ['tactic-1'], collection, upgradesById);
 
 		expect(result).toEqual([]);
 	});
 
 	it('counts multiple slots of the same type independently', () => {
-		const character = makeCharacter({ upgradeSlots: ['Scroll', 'Scroll'], keywords: [] });
+		const character = makeCharacter({ upgradeSlots: ['tactic', 'tactic'], keywords: [] });
 
-		const result = compatibleUpgrades(character, ['scroll-1'], collection, upgradesById);
+		const result = compatibleUpgrades(character, ['tactic-1'], collection, upgradesById);
 
-		expect(result.map((u) => u.id)).toEqual(['scroll-2']);
+		expect(result.map((u) => u.id)).toEqual(['tactic-2']);
 	});
 
 	it('requires the character to have every keyword in restrictions', () => {
-		const character = makeCharacter({ upgradeSlots: ['Scroll'], keywords: ['Hero'] });
+		const character = makeCharacter({ upgradeSlots: ['tactic'], keywords: ['Hero'] });
 
 		const result = compatibleUpgrades(character, [], collection, upgradesById);
 
@@ -143,7 +143,7 @@ describe('compatibleUpgrades', () => {
 	});
 
 	it('includes restriction-bound upgrades once the character has the keyword', () => {
-		const character = makeCharacter({ upgradeSlots: ['Scroll'], keywords: ['Cleric'] });
+		const character = makeCharacter({ upgradeSlots: ['tactic'], keywords: ['Cleric'] });
 
 		const result = compatibleUpgrades(character, [], collection, upgradesById);
 

@@ -1,6 +1,14 @@
 /** A character's alignment: Advocate, Adversary, or Neutral (fieldable by either side) */
 export type Path = 'advocate' | 'adversary' | 'neutral';
 
+/**
+ * Upgrade slot icon shown in a character's inventory (Card Anatomy: sword =
+ * weapon, scroll = tactic, flask = potion, star = spell, bag = item). A
+ * character may equip one upgrade per matching icon; the same type can repeat
+ * to represent multiple slots of that kind. Matched against `Upgrade.type`.
+ */
+export type UpgradeSlotType = 'weapon' | 'tactic' | 'potion' | 'spell' | 'item';
+
 /** Action symbol shown on the action bar, as defined by the rules (Card Anatomy: action type) */
 export type ActionType =
 	| 'melee-weapon'
@@ -37,8 +45,8 @@ export interface Character {
 	};
 	keywords: string[];
 	actions: Action[];
-	/** Upgrade slot names as printed on the card, e.g. "Artisan", "Scroll" — user-defined, matched by exact name */
-	upgradeSlots: string[];
+	/** One entry per upgrade slot icon shown in the inventory; repeat a type for multiple slots of that kind */
+	upgradeSlots: UpgradeSlotType[];
 	notes: string;
 	imageUri?: string;
 	source: 'manual' | 'ocr' | 'import';

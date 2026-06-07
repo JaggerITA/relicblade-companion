@@ -22,7 +22,7 @@ const baseCharacter = {
 	stats: { actionDice: 3, speed: 5, armor: 3, health: 5 },
 	keywords: ['Hero'],
 	actions: [],
-	upgradeSlots: [] as string[],
+	upgradeSlots: [],
 	notes: '',
 	source: 'manual' as const
 };

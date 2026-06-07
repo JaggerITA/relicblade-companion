@@ -228,7 +228,7 @@ interface Character {
   };
   keywords: string[];            // e.g., "Hero", "Pig", "Construct"
   actions: Action[];             // character abilities
-  upgradeSlots: string[];        // slot names as printed on the card, e.g. "Artisan", "Scroll" — user-defined, matched by exact name
+  upgradeSlots: UpgradeSlotType[]; // one entry per slot icon shown (weapon/tactic/potion/spell/item), repeat for multiple slots of a kind
   notes: string;                 // free-text notes
   imageUri?: string;             // local ref to scanned card image (optional)
   source: 'manual' | 'ocr' | 'import';
@@ -239,7 +239,7 @@ interface Character {
 
 interface Action {
   name: string;
-  type: 'attack' | 'ability' | 'spell' | 'defense' | 'other';
+  type: ActionType;              // melee-weapon | ranged-weapon | ranged-or-melee-weapon | natural-weapon | passive-ability | magic-spell | special-ability
   diceCount?: number;            // number of dice rolled, e.g. 2 for "x2" on the card
   activationValue?: string;      // roll threshold to activate/succeed, e.g. "4+", "6+"
   effect: string;                // free-text description
@@ -252,7 +252,7 @@ interface Action {
 interface Upgrade {
   id: string;
   name: string;
-  type: string;                  // slot name as printed on the card, e.g. "Concealment" — matched against Character.upgradeSlots by exact name
+  type: UpgradeSlotType;         // weapon | tactic | potion | spell | item — matched against Character.upgradeSlots
   cost: number;
   effect: string;
   restrictions: string[];        // keyword restrictions, user-defined

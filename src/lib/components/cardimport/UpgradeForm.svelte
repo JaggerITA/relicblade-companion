@@ -2,6 +2,15 @@
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
+	import type { UpgradeSlotType } from '$lib/models/Character.js';
+
+	const UPGRADE_SLOT_TYPES: { value: UpgradeSlotType; label: string }[] = [
+		{ value: 'weapon', label: 'Weapon' },
+		{ value: 'tactic', label: 'Tactic' },
+		{ value: 'potion', label: 'Potion' },
+		{ value: 'spell', label: 'Spell' },
+		{ value: 'item', label: 'Item' }
+	];
 
 	interface Props {
 		initial?: Partial<Upgrade>;
@@ -13,7 +22,7 @@
 
 	// untrack: intentionally capture prop values once to seed form state
 	let name = $state(untrack(() => initial.name ?? ''));
-	let type = $state(untrack(() => initial.type ?? ''));
+	let type = $state<UpgradeSlotType>(untrack(() => initial.type ?? 'weapon'));
 	let cost = $state(untrack(() => initial.cost ?? 0));
 	let effect = $state(untrack(() => initial.effect ?? ''));
 	let restrictions = $state(untrack(() => initial.restrictions?.join(', ') ?? ''));
@@ -22,7 +31,6 @@
 	function validate(): boolean {
 		const e: Record<string, string> = {};
 		if (!name.trim()) e.name = 'Name is required';
-		if (!type.trim()) e.type = 'Slot type is required';
 		if (cost < 0) e.cost = 'Cost must be 0 or greater';
 		errors = e;
 		return Object.keys(e).length === 0;
@@ -32,7 +40,7 @@
 		if (!validate()) return;
 		onsubmit({
 			name: name.trim(),
-			type: type.trim(),
+			type,
 			cost,
 			effect,
 			restrictions: restrictions.split(',').map((r) => r.trim()).filter(Boolean),
@@ -56,15 +64,16 @@
 
 	<div class="grid grid-cols-2 gap-3">
 		<div>
-			<label class="mb-1 block text-sm" for="utype">Slot type * (as printed on the card)</label>
-			<input
+			<label class="mb-1 block text-sm" for="utype">Slot type</label>
+			<select
 				id="utype"
-				type="text"
 				bind:value={type}
-				placeholder="e.g. Concealment"
 				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
-			/>
-			{#if errors.type}<p class="mt-1 text-xs text-red-400">{errors.type}</p>{/if}
+			>
+				{#each UPGRADE_SLOT_TYPES as t}
+					<option value={t.value}>{t.label}</option>
+				{/each}
+			</select>
 		</div>
 		<div>
 			<label class="mb-1 block text-sm" for="ucost">Cost (inf.)</label>
