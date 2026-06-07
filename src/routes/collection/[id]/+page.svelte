@@ -22,7 +22,7 @@
 		</div>
 		<button
 			onclick={() => (confirmDelete = true)}
-			class="text-sm text-red-400 hover:text-red-300"
+			class="text-sm text-on-muted hover:text-on-surface"
 			aria-label="Delete card"
 		>
 			Delete

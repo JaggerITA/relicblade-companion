@@ -20,7 +20,7 @@
 			<a href="{base}/collection" class="text-on-muted hover:text-on-surface">‹</a>
 			<h1 class="text-xl font-bold">Edit Upgrade</h1>
 		</div>
-		<button onclick={() => (confirmDelete = true)} class="text-sm text-red-400 hover:text-red-300">
+		<button onclick={() => (confirmDelete = true)} class="text-sm text-on-muted hover:text-on-surface">
 			Delete
 		</button>
 	</header>

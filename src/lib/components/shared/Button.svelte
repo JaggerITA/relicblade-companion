@@ -12,7 +12,7 @@
 	const styles = {
 		primary: 'bg-accent text-white hover:bg-accent-muted active:scale-95',
 		ghost: 'text-on-muted hover:bg-white/10 active:scale-95',
-		danger: 'bg-red-700 text-white hover:bg-red-800 active:scale-95'
+		danger: 'border border-white/20 text-on-muted hover:bg-white/10 active:scale-95'
 	};
 </script>
 

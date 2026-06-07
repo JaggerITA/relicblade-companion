@@ -196,7 +196,7 @@
 						placeholder="4+"
 						class="w-12 rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
 					/>
-					<button type="button" onclick={() => removeAction(i)} class="text-on-muted hover:text-red-400" aria-label="Remove action">✕</button>
+					<button type="button" onclick={() => removeAction(i)} class="text-on-muted hover:text-on-surface" aria-label="Remove action">✕</button>
 				</div>
 				<input
 					type="text"
