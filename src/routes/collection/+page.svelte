@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import { base } from '$app/paths';
 	import type { Path } from '$lib/models/Character.js';
 
@@ -138,6 +139,7 @@
 		{:else}
 			<ul class="space-y-2">
 				{#each filteredUpgrades as upg (upg.id)}
+					{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[upg.type]}
 					<li>
 						<a
 							href="{base}/collection/upgrade/{upg.id}"
@@ -145,7 +147,10 @@
 						>
 							<div class="min-w-0">
 								<p class="truncate font-semibold">{upg.name}</p>
-								<p class="truncate text-sm capitalize text-on-muted">{upg.type}</p>
+								<p class="flex items-center gap-1 truncate text-sm capitalize text-on-muted">
+									<SlotIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+									{upg.type}
+								</p>
 							</div>
 							<div class="ml-3 flex shrink-0 items-center gap-2">
 								<span class="text-sm font-semibold text-accent">{upg.cost} inf</span>

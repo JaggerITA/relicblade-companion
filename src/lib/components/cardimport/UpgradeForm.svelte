@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import { UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
 	import type { UpgradeSlotType } from '$lib/models/Character.js';
 
@@ -27,6 +28,8 @@
 	let effect = $state(untrack(() => initial.effect ?? ''));
 	let restrictions = $state(untrack(() => initial.restrictions?.join(', ') ?? ''));
 	let errors = $state<Record<string, string>>({});
+
+	const SelectedSlotIcon = $derived(UPGRADE_SLOT_TYPE_ICONS[type]);
 
 	function validate(): boolean {
 		const e: Record<string, string> = {};
@@ -65,15 +68,23 @@
 	<div class="grid grid-cols-2 gap-3">
 		<div>
 			<label class="mb-1 block text-sm" for="utype">Slot type</label>
-			<select
-				id="utype"
-				bind:value={type}
-				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
-			>
-				{#each UPGRADE_SLOT_TYPES as t}
-					<option value={t.value}>{t.label}</option>
-				{/each}
-			</select>
+			<div class="flex items-center gap-2">
+				<span
+					class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-overlay text-on-muted"
+					aria-hidden="true"
+				>
+					<SelectedSlotIcon class="h-4 w-4" />
+				</span>
+				<select
+					id="utype"
+					bind:value={type}
+					class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+				>
+					{#each UPGRADE_SLOT_TYPES as t}
+						<option value={t.value}>{t.label}</option>
+					{/each}
+				</select>
+			</div>
 		</div>
 		<div>
 			<label class="mb-1 block text-sm" for="ucost">Cost (inf.)</label>

@@ -1,0 +1,43 @@
+import Sword from '@lucide/svelte/icons/sword';
+import BowArrow from '@lucide/svelte/icons/bow-arrow';
+import Swords from '@lucide/svelte/icons/swords';
+import PawPrint from '@lucide/svelte/icons/paw-print';
+import Shield from '@lucide/svelte/icons/shield';
+import Wand from '@lucide/svelte/icons/wand';
+import Sparkles from '@lucide/svelte/icons/sparkles';
+import Scroll from '@lucide/svelte/icons/scroll';
+import FlaskConical from '@lucide/svelte/icons/flask-conical';
+import Star from '@lucide/svelte/icons/star';
+import Backpack from '@lucide/svelte/icons/backpack';
+import type { LucideIcon } from '@lucide/svelte';
+import type { ActionType, UpgradeSlotType } from '$lib/models/Character.js';
+
+/**
+ * Generic outline icons standing in for each action-bar symbol category
+ * (Card Anatomy: melee/ranged/natural weapon, passive/special ability, spell).
+ * These are stock icons from the Lucide set (ISC license), not artwork from
+ * the game — they only help players match a category to the symbol printed
+ * on their physical cards.
+ */
+export const ACTION_TYPE_ICONS: Record<ActionType, LucideIcon> = {
+	'melee-weapon': Sword,
+	'ranged-weapon': BowArrow,
+	'ranged-or-melee-weapon': Swords,
+	'natural-weapon': PawPrint,
+	'passive-ability': Shield,
+	'magic-spell': Wand,
+	'special-ability': Sparkles
+};
+
+/**
+ * Generic outline icons standing in for each upgrade slot icon category
+ * (Card Anatomy: sword = weapon, scroll = tactic, flask = potion, star = spell,
+ * bag = item). Stock Lucide icons (ISC license), not artwork from the game.
+ */
+export const UPGRADE_SLOT_TYPE_ICONS: Record<UpgradeSlotType, LucideIcon> = {
+	weapon: Sword,
+	tactic: Scroll,
+	potion: FlaskConical,
+	spell: Star,
+	item: Backpack
+};

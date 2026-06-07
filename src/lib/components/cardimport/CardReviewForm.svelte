@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import { ACTION_TYPE_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import type { Action, ActionType, Character, Path, UpgradeSlotType } from '$lib/models/Character.js';
 
 	const UPGRADE_SLOT_TYPES: { value: UpgradeSlotType; label: string }[] = [
@@ -206,6 +207,7 @@
 		</div>
 
 		{#each actions as action, i}
+			{@const ActionIcon = ACTION_TYPE_ICONS[action.type]}
 			<div class="rounded-lg bg-surface-overlay p-3 space-y-2">
 				<div class="flex gap-2">
 					<input
@@ -214,6 +216,12 @@
 						placeholder="Action name"
 						class="flex-1 rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
 					/>
+					<span
+						class="flex shrink-0 items-center justify-center rounded bg-surface px-2 text-on-muted"
+						aria-hidden="true"
+					>
+						<ActionIcon class="h-4 w-4" />
+					</span>
 					<select
 						bind:value={action.type}
 						class="rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
@@ -292,8 +300,12 @@
 			</p>
 			<div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
 				{#each UPGRADE_SLOT_TYPES as t}
+					{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[t.value]}
 					<div class="flex items-center justify-between gap-2 rounded-lg bg-surface-overlay px-3 py-2">
-						<label for={`slot-${t.value}`} class="text-sm">{t.label}</label>
+						<label for={`slot-${t.value}`} class="flex items-center gap-2 text-sm">
+							<SlotIcon class="h-4 w-4 text-on-muted" aria-hidden="true" />
+							{t.label}
+						</label>
 						<input
 							id={`slot-${t.value}`}
 							type="number"

@@ -7,6 +7,7 @@
 	import InfluenceBar from '$lib/components/listbuilder/InfluenceBar.svelte';
 	import CharacterPickerSheet from '$lib/components/listbuilder/CharacterPickerSheet.svelte';
 	import UpgradePickerSheet from '$lib/components/listbuilder/UpgradePickerSheet.svelte';
+	import { UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
@@ -100,8 +101,13 @@
 										{#each entry.equippedUpgradeIds as upgradeId (upgradeId)}
 											{@const upgrade = collectionStore.getUpgrade(upgradeId)}
 											{#if upgrade}
+												{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[upgrade.type]}
 												<li class="flex items-center justify-between pl-3 text-sm text-on-muted">
-													<span class="truncate">▸ {upgrade.type}: {upgrade.name}</span>
+													<span class="flex min-w-0 items-center gap-1.5 truncate">
+														<span aria-hidden="true">▸</span>
+														<SlotIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+														<span class="truncate">{upgrade.name}</span>
+													</span>
 													<div class="ml-3 flex shrink-0 items-center gap-2">
 														<span>{upgrade.cost} inf</span>
 														<button

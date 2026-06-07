@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Modal from '$lib/components/shared/Modal.svelte';
+	import { UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import { compatibleUpgrades } from '$lib/utils/validation.js';
 	import type { Character } from '$lib/models/Character.js';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
@@ -31,6 +32,7 @@
 				</p>
 			{:else}
 				{#each compatible as upg (upg.id)}
+					{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[upg.type]}
 					<button
 						type="button"
 						onclick={() => onpick(upg.id)}
@@ -38,7 +40,10 @@
 					>
 						<div class="min-w-0">
 							<p class="truncate font-semibold">{upg.name}</p>
-							<p class="truncate text-xs capitalize text-on-muted">{upg.type}</p>
+							<p class="flex items-center gap-1 truncate text-xs capitalize text-on-muted">
+								<SlotIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+								{upg.type}
+							</p>
 						</div>
 						<span class="ml-3 shrink-0 text-sm font-semibold text-accent">{upg.cost} inf</span>
 					</button>
