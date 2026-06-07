@@ -211,22 +211,22 @@
 						/>
 					</div>
 					<div>
-						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-bonus`}>Bonus</label>
-						<input
-							id={`action-${i}-bonus`}
-							type="text"
-							bind:value={action.bonus}
-							placeholder="e.g. +3"
-							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
-						/>
-					</div>
-					<div>
 						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-activation`}>Activation</label>
 						<input
 							id={`action-${i}-activation`}
 							type="text"
 							bind:value={action.activationValue}
 							placeholder="e.g. 4+"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-bonus`}>Bonus</label>
+						<input
+							id={`action-${i}-bonus`}
+							type="text"
+							bind:value={action.bonus}
+							placeholder="e.g. +3"
 							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
 						/>
 					</div>
