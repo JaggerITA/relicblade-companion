@@ -7,8 +7,8 @@ import Wand from '@lucide/svelte/icons/wand';
 import Sparkles from '@lucide/svelte/icons/sparkles';
 import Scroll from '@lucide/svelte/icons/scroll';
 import FlaskConical from '@lucide/svelte/icons/flask-conical';
-import Star from '@lucide/svelte/icons/star';
 import Backpack from '@lucide/svelte/icons/backpack';
+import HandFist from '@lucide/svelte/icons/hand-fist';
 import type { LucideIcon } from '@lucide/svelte';
 import type { ActionType, UpgradeSlotType } from '$lib/models/Character.js';
 
@@ -33,11 +33,15 @@ export const ACTION_TYPE_ICONS: Record<ActionType, LucideIcon> = {
  * Generic outline icons standing in for each upgrade slot icon category
  * (Card Anatomy: sword = weapon, scroll = tactic, flask = potion, star = spell,
  * bag = item). Stock Lucide icons (ISC license), not artwork from the game.
+ *
+ * Tactic and Spell deliberately don't use the literal scroll/star pairing —
+ * a closed fist reads better for combat tactics, and the scroll for arcane
+ * preparation, so they're swapped relative to the printed card icons.
  */
 export const UPGRADE_SLOT_TYPE_ICONS: Record<UpgradeSlotType, LucideIcon> = {
 	weapon: Sword,
-	tactic: Scroll,
+	tactic: HandFist,
 	potion: FlaskConical,
-	spell: Star,
+	spell: Scroll,
 	item: Backpack
 };
