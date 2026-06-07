@@ -1,7 +1,17 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import type { Action, Character, Path } from '$lib/models/Character.js';
+	import type { Action, ActionType, Character, Path } from '$lib/models/Character.js';
+
+	const ACTION_TYPES: { value: ActionType; label: string }[] = [
+		{ value: 'melee-weapon', label: 'Melee Weapon' },
+		{ value: 'ranged-weapon', label: 'Ranged Weapon' },
+		{ value: 'ranged-or-melee-weapon', label: 'Ranged or Melee Weapon' },
+		{ value: 'natural-weapon', label: 'Natural Weapon' },
+		{ value: 'passive-ability', label: 'Passive Ability' },
+		{ value: 'magic-spell', label: 'Magic Spell' },
+		{ value: 'special-ability', label: 'Special Ability' }
+	];
 
 	interface Props {
 		initial?: Partial<Character>;
@@ -26,7 +36,7 @@
 	let notes = $state(untrack(() => initial.notes ?? ''));
 	let upgradeSlots = $state(untrack(() => initial.upgradeSlots?.join(', ') ?? ''));
 	function blankAction(): Action {
-		return { name: '', type: 'attack', diceCount: undefined, activationValue: '', effect: '', bonus: '' };
+		return { name: '', type: 'melee-weapon', diceCount: undefined, activationValue: '', effect: '', bonus: '' };
 	}
 
 	let actions = $state<Action[]>(untrack(() =>
@@ -194,8 +204,8 @@
 						bind:value={action.type}
 						class="rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
 					>
-						{#each ['attack','ability','spell','defense','other'] as t}
-							<option value={t}>{t}</option>
+						{#each ACTION_TYPES as t}
+							<option value={t.value}>{t.label}</option>
 						{/each}
 					</select>
 					<button type="button" onclick={() => removeAction(i)} class="text-on-muted hover:text-on-surface" aria-label="Remove action">✕</button>

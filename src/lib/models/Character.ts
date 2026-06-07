@@ -1,9 +1,19 @@
 /** A character's alignment: Advocate, Adversary, or Neutral (fieldable by either side) */
 export type Path = 'advocate' | 'adversary' | 'neutral';
 
+/** Action symbol shown on the action bar, as defined by the rules (Card Anatomy: action type) */
+export type ActionType =
+	| 'melee-weapon'
+	| 'ranged-weapon'
+	| 'ranged-or-melee-weapon'
+	| 'natural-weapon'
+	| 'passive-ability'
+	| 'magic-spell'
+	| 'special-ability';
+
 export interface Action {
 	name: string;
-	type: 'attack' | 'ability' | 'spell' | 'defense' | 'other';
+	type: ActionType;
 	/** Number of dice rolled for this action, e.g. 2 for "x2" on the card */
 	diceCount?: number;
 	/** Roll threshold to activate, e.g. "4+" */
