@@ -70,14 +70,18 @@
 
 	function handleSubmit() {
 		if (!validate()) return;
+		// $state.snapshot() converts reactive Svelte proxies to plain objects
+		// so IndexedDB's structured-clone algorithm can serialize them
+		const plainActions = $state.snapshot(actions) as Action[];
+		const plainSlots = $state.snapshot(upgradeSlots) as typeof upgradeSlots;
 		onsubmit({
 			name: name.trim(),
 			faction: faction.trim(),
 			cost,
 			stats: { actionDice, speed, armor, health },
 			keywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
-			actions: actions.filter((a) => a.name.trim()),
-			upgradeSlots,
+			actions: plainActions.filter((a) => a.name.trim()),
+			upgradeSlots: plainSlots,
 			notes,
 			source: initial.source ?? 'manual',
 			ocrConfidence: initial.ocrConfidence,
