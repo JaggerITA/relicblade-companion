@@ -2,6 +2,7 @@
 	import '../app.css';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
+	import Toast from '$lib/components/shared/Toast.svelte';
 
 	const navItems = [
 		{ path: '/', label: 'Home', icon: '🏠' },
@@ -17,6 +18,8 @@
 		return p.startsWith(path);
 	}
 </script>
+
+<Toast />
 
 <div class="flex min-h-screen flex-col">
 	<main class="flex-1 overflow-y-auto pb-16">

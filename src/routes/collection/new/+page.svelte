@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import CardReviewForm from '$lib/components/cardimport/CardReviewForm.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 	import type { Character } from '$lib/models/Character.js';
 
 	$effect(() => { collectionStore.hydrate(); });
@@ -16,7 +17,8 @@
 
 	<CardReviewForm
 		onsubmit={async (data) => {
-			await collectionStore.addCharacter(data as Omit<Character, 'id' | 'createdAt' | 'updatedAt'>);
+			const char = await collectionStore.addCharacter(data as Omit<Character, 'id' | 'createdAt' | 'updatedAt'>);
+			toastStore.success(`${char.name} added to collection`);
 			goto(`${base}/collection`);
 		}}
 		oncancel={() => goto(`${base}/collection`)}

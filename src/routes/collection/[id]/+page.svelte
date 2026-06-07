@@ -6,6 +6,7 @@
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 
 	const id = $derived($page.params.id ?? '');
 	const character = $derived(collectionStore.getCharacter(id));
@@ -34,6 +35,7 @@
 			initial={character}
 			onsubmit={async (data) => {
 				await collectionStore.updateCharacter({ ...character, ...data });
+				toastStore.success('Card saved');
 				goto(`${base}/collection`);
 			}}
 			oncancel={() => goto(`${base}/collection`)}
@@ -59,8 +61,10 @@
 		<Button
 			variant="danger"
 			onclick={async () => {
+				const name = character?.name ?? 'Card';
 				await collectionStore.deleteCharacter(id);
 				goto(`${base}/collection`);
+				toastStore.info(`${name} deleted`);
 			}}
 		>
 			Delete

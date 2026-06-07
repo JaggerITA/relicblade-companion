@@ -6,6 +6,7 @@
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 
 	const id = $derived($page.params.id ?? '');
 	const upgrade = $derived(collectionStore.getUpgrade(id));
@@ -30,6 +31,7 @@
 			initial={upgrade}
 			onsubmit={async (data) => {
 				await collectionStore.updateUpgrade({ ...upgrade, ...data });
+				toastStore.success('Upgrade saved');
 				goto(`${base}/collection`);
 			}}
 			oncancel={() => goto(`${base}/collection`)}
@@ -47,7 +49,12 @@
 	{/snippet}
 	{#snippet actions()}
 		<Button variant="ghost" onclick={() => (confirmDelete = false)}>Cancel</Button>
-		<Button variant="danger" onclick={async () => { await collectionStore.deleteUpgrade(id); goto(`${base}/collection`); }}>
+		<Button variant="danger" onclick={async () => {
+				const name = upgrade?.name ?? 'Upgrade';
+				await collectionStore.deleteUpgrade(id);
+				goto(`${base}/collection`);
+				toastStore.info(`${name} deleted`);
+			}}>
 			Delete
 		</Button>
 	{/snippet}

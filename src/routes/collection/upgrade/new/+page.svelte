@@ -3,6 +3,7 @@
 	import { base } from '$app/paths';
 	import UpgradeForm from '$lib/components/cardimport/UpgradeForm.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 
 	$effect(() => { collectionStore.hydrate(); });
 </script>
@@ -15,7 +16,8 @@
 
 	<UpgradeForm
 		onsubmit={async (data) => {
-			await collectionStore.addUpgrade(data);
+			const upg = await collectionStore.addUpgrade(data);
+			toastStore.success(`${upg.name} added to collection`);
 			goto(`${base}/collection`);
 		}}
 		oncancel={() => goto(`${base}/collection`)}
