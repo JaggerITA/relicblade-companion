@@ -13,6 +13,7 @@ import Dices from '@lucide/svelte/icons/dices';
 import Wind from '@lucide/svelte/icons/wind';
 import ShieldHalf from '@lucide/svelte/icons/shield-half';
 import Heart from '@lucide/svelte/icons/heart';
+import Fuel from '@lucide/svelte/icons/fuel';
 import type { LucideIcon } from '@lucide/svelte';
 import type { ActionType, UpgradeSlotType } from '$lib/models/Character.js';
 
@@ -61,3 +62,10 @@ export const STAT_ICONS = {
 	armor: ShieldHalf,
 	health: Heart
 } satisfies Record<'actionDice' | 'speed' | 'armor' | 'health', LucideIcon>;
+
+/**
+ * Fuel-cell variant of the health icon — Constructs track fuel cells instead
+ * of health boxes (Game Rules #type/construct). Distinct from `Heart` so the
+ * Game Manager never shows the same glyph for two different trackers.
+ */
+export const FUEL_ICON: LucideIcon = Fuel;
