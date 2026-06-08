@@ -9,6 +9,8 @@ export interface EffectiveStats {
 	maxHealth: number;
 	isDisabled: boolean;
 	isConstruct: boolean;
+	/** Auto-computed from `Character.criticalHealthBoxes`: how many critical boxes are currently damaged → each applies −1 AD */
+	criticalWoundPenalty: number;
 }
 
 /** Case-insensitive keyword check (mirrors how `compatibleUpgrades` matches `restrictions` against `keywords`). */
@@ -31,9 +33,15 @@ export function hasKeyword(character: Pick<Character, 'keywords'>, keyword: stri
  */
 export function computeEffectiveStats(character: Character, model: ModelState): EffectiveStats {
 	const isConstruct = model.isConstruct;
+	// Boxes fill left-to-right as damage accrues: position p is damaged when p ≤ (maxHealth − currentHealth)
+	const damagedBoxCount = model.maxHealth - model.currentHealth;
+	const criticalWoundPenalty = isConstruct
+		? 0
+		: (character.criticalHealthBoxes ?? []).filter((p) => p <= damagedBoxCount).length;
+
 	const actionDice = isConstruct
 		? Math.max(0, model.currentHealth)
-		: Math.max(0, character.stats.actionDice + model.actionDiceModifier);
+		: Math.max(0, character.stats.actionDice + model.actionDiceModifier - criticalWoundPenalty);
 
 	return {
 		actionDice,
@@ -42,6 +50,7 @@ export function computeEffectiveStats(character: Character, model: ModelState): 
 		currentHealth: model.currentHealth,
 		maxHealth: model.maxHealth,
 		isDisabled: model.currentHealth <= 0,
-		isConstruct
+		isConstruct,
+		criticalWoundPenalty
 	};
 }

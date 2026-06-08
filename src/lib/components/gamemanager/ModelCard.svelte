@@ -3,6 +3,9 @@
 	import HealthTracker from './HealthTracker.svelte';
 	import { STAT_ICONS } from '$lib/constants/icons.js';
 	import { computeEffectiveStats, hasKeyword } from '$lib/utils/computeEffectiveStats.js';
+
+	const SpeedIcon = STAT_ICONS.speed;
+	const ArmorIcon = STAT_ICONS.armor;
 	import type { Character } from '$lib/models/Character.js';
 	import type { ModelState } from '$lib/models/GameState.js';
 
@@ -36,12 +39,22 @@
 	}
 </script>
 
-<div class="card transition-opacity {stats.isDisabled ? 'opacity-50' : ''}">
+<div
+	class="card transition-opacity {model.destroyed
+		? 'pointer-events-none opacity-25'
+		: stats.isDisabled
+			? 'opacity-50'
+			: ''}"
+>
 	<div class="flex items-start justify-between gap-3">
-		<div class="min-w-0">
+		<div class="min-w-0 flex-1">
 			<p class="truncate font-semibold">
 				{character.name}
-				{#if stats.isDisabled}<span class="font-normal text-on-muted">(disabled 💀)</span>{/if}
+				{#if model.destroyed}
+					<span class="font-normal text-on-muted">(destroyed 💀💀)</span>
+				{:else if stats.isDisabled}
+					<span class="font-normal text-on-muted">(disabled 💀)</span>
+				{/if}
 			</p>
 			{#if specialTypes.length > 0}
 				<div class="mt-1 flex flex-wrap gap-1">
@@ -55,10 +68,25 @@
 				</div>
 			{/if}
 		</div>
-		<span class="flex shrink-0 items-center gap-1 text-sm font-semibold text-accent">
-			<ActionDiceIcon class="h-4 w-4" aria-hidden="true" />
-			{stats.actionDice}
-		</span>
+
+		<!-- Stats row: AD (primary, highlighted) + SPD and ARM (secondary) -->
+		<div class="flex shrink-0 flex-col items-end gap-1">
+			<span class="flex items-center gap-1 text-sm font-semibold text-accent">
+				<ActionDiceIcon class="h-4 w-4" aria-hidden="true" />
+				{stats.actionDice}
+				{#if stats.criticalWoundPenalty > 0}
+					<span class="text-xs font-normal text-amber-400">(−{stats.criticalWoundPenalty} crit)</span>
+				{/if}
+			</span>
+			<span class="flex items-center gap-2 text-xs text-on-muted">
+				<span class="flex items-center gap-0.5">
+					<SpeedIcon class="h-3.5 w-3.5" aria-hidden="true" />{stats.speed}
+				</span>
+				<span class="flex items-center gap-0.5">
+					<ArmorIcon class="h-3.5 w-3.5" aria-hidden="true" />{stats.armor}
+				</span>
+			</span>
+		</div>
 	</div>
 
 	<div class="mt-3">
@@ -66,13 +94,14 @@
 			currentHealth={model.currentHealth}
 			maxHealth={model.maxHealth}
 			isConstruct={model.isConstruct}
+			criticalBoxes={character.criticalHealthBoxes ?? []}
 			onadjust={onadjusthealth}
 		/>
 	</div>
 
 	{#if !model.isConstruct}
 		<div class="mt-2 flex items-center gap-2 text-xs text-on-muted">
-			<span>AD modifier (crit wounds, poison, etc.)</span>
+			<span>AD modifier (poison, focus, etc.)</span>
 			<div class="ml-auto flex items-center gap-2">
 				<Button variant="ghost" onclick={() => onadjustactiondice(-1)}>−</Button>
 				<span class="w-5 text-center font-semibold text-on-surface">{model.actionDiceModifier}</span>

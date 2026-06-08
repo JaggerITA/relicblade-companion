@@ -186,6 +186,52 @@ describe('gameStore', () => {
 		});
 	});
 
+	describe('destruction (Game Rules: Disabled)', () => {
+		it('starts models as not destroyed', async () => {
+			registerCharacter(makeCharacter({ id: 'knight' }));
+			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
+			expect(game.models[0].destroyed).toBe(false);
+		});
+
+		it('destroys a model when it takes damage while already disabled', async () => {
+			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 4 } }));
+			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
+
+			await gameStore.applyDamage(game.id, 1, 'knight', 4); // disable (currentHealth → 0)
+			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(0);
+			expect(gameStore.getGame(game.id)?.models[0].destroyed).toBe(false);
+
+			await gameStore.applyDamage(game.id, 1, 'knight', 1); // already disabled → destroyed
+			expect(gameStore.getGame(game.id)?.models[0].destroyed).toBe(true);
+		});
+
+		it('excludes destroyed models from activatable and disabled helpers', async () => {
+			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 4 } }));
+			registerCharacter(makeCharacter({ id: 'pig', stats: { actionDice: 3, speed: 4, armor: 2, health: 2 } }));
+			const game = await gameStore.start(
+				makeRoster([{ characterId: 'knight' }, { characterId: 'pig' }]),
+				makeRoster([])
+			);
+
+			await gameStore.applyDamage(game.id, 1, 'pig', 2); // disable pig
+			await gameStore.applyDamage(game.id, 1, 'pig', 1); // destroy pig
+			const current = gameStore.getGame(game.id)!;
+			expect(gameStore.disabledModels(current, 1)).toHaveLength(0); // destroyed ≠ disabled (no recovery roll)
+			expect(gameStore.activatableModels(current, 1)).toHaveLength(1); // knight still activatable
+		});
+
+		it('allActivated ignores destroyed models', async () => {
+			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 4 } }));
+			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
+
+			await gameStore.applyDamage(game.id, 1, 'knight', 4); // disable
+			await gameStore.applyDamage(game.id, 1, 'knight', 1); // destroy
+			const current = gameStore.getGame(game.id)!;
+			// No living models remain on side 1 — all (zero) are accounted for
+			expect(gameStore.allActivated(current, 1)).toBe(true);
+		});
+	});
+
 	describe('actionDiceModifier', () => {
 		it('adjusts by the given delta — covers crit wounds, poison, etc. with one primitive', async () => {
 			registerCharacter(makeCharacter({ id: 'knight' }));

@@ -55,7 +55,8 @@ function createGameStore() {
 				activated: false,
 				conditions: [],
 				actionDiceModifier: 0,
-				isConstruct
+				isConstruct,
+				destroyed: false
 			});
 		}
 		return states;
@@ -124,23 +125,29 @@ function createGameStore() {
 		});
 	}
 
-	function adjustHealth(game: GameState, rosterOwner: 1 | 2, characterId: string, delta: number): ModelState[] {
-		return mapModel(game, rosterOwner, characterId, (m) => ({
-			...m,
-			currentHealth: Math.min(m.maxHealth, Math.max(0, m.currentHealth + delta))
-		}));
-	}
-
 	async function applyDamage(gameId: string, rosterOwner: 1 | 2, characterId: string, n: number): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
-		await persist({ ...game, models: adjustHealth(game, rosterOwner, characterId, -n) });
+		await persist({
+			...game,
+			models: mapModel(game, rosterOwner, characterId, (m) => {
+				// Already disabled: additional damage destroys the model (Game Rules: Disabled)
+				if (m.currentHealth <= 0) return { ...m, destroyed: true };
+				return { ...m, currentHealth: Math.max(0, m.currentHealth - n) };
+			})
+		});
 	}
 
 	async function heal(gameId: string, rosterOwner: 1 | 2, characterId: string, n: number): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
-		await persist({ ...game, models: adjustHealth(game, rosterOwner, characterId, n) });
+		await persist({
+			...game,
+			models: mapModel(game, rosterOwner, characterId, (m) => ({
+				...m,
+				currentHealth: Math.min(m.maxHealth, Math.max(0, m.currentHealth + n))
+			}))
+		});
 	}
 
 	/** Single delta the player adjusts from their physical card — covers critical wounds, poison, focus, etc. (ADR-007). */
@@ -219,15 +226,18 @@ function createGameStore() {
 	}
 
 	function activatableModels(game: GameState, player: 1 | 2): ModelState[] {
-		return modelsForPlayer(game, player).filter((m) => !m.activated && m.currentHealth > 0);
+		return modelsForPlayer(game, player).filter((m) => !m.activated && m.currentHealth > 0 && !m.destroyed);
 	}
 
+	/** Disabled (currentHealth=0) but not destroyed — eligible for recovery rolls. */
 	function disabledModels(game: GameState, player: 1 | 2): ModelState[] {
-		return modelsForPlayer(game, player).filter((m) => m.currentHealth <= 0);
+		return modelsForPlayer(game, player).filter((m) => m.currentHealth <= 0 && !m.destroyed);
 	}
 
 	function allActivated(game: GameState, player: 1 | 2): boolean {
-		return modelsForPlayer(game, player).every((m) => m.activated || m.currentHealth <= 0);
+		return modelsForPlayer(game, player)
+			.filter((m) => !m.destroyed)
+			.every((m) => m.activated || m.currentHealth <= 0);
 	}
 
 	return {

@@ -47,6 +47,14 @@ export interface Character {
 	actions: Action[];
 	/** One entry per upgrade slot icon shown in the inventory; repeat a type for multiple slots of that kind */
 	upgradeSlots: UpgradeSlotType[];
+	/**
+	 * 1-based positions (left-to-right in the damage track) of health boxes that
+	 * carry a broken-bone icon on the physical card. When a critical box is
+	 * damaged the character suffers −1 AD until healed (Game Rules: Critically
+	 * Wounded). Used by `computeEffectiveStats` to auto-apply the penalty.
+	 * Example: Basilisk with 4 HP has a critical box at position 3.
+	 */
+	criticalHealthBoxes?: number[];
 	notes: string;
 	imageUri?: string;
 	source: 'manual' | 'ocr' | 'import';

@@ -13,6 +13,8 @@ export interface ModelState {
 	actionDiceModifier: number;
 	/** True when character has the Construct keyword (uses health as fuel cells) */
 	isConstruct: boolean;
+	/** True once a disabled model absorbs additional damage — removed from play (Game Rules: Disabled) */
+	destroyed: boolean;
 }
 
 export interface GameState {
