@@ -67,7 +67,7 @@ function createGameStore() {
 		isCampaignGame = false,
 		campaignId?: string
 	): Promise<GameState> {
-		const game: GameState = {
+		const game = $state.snapshot({
 			id: newId(),
 			roster1,
 			roster2,
@@ -78,7 +78,7 @@ function createGameStore() {
 			startedAt: new Date().toISOString(),
 			isCampaignGame,
 			campaignId
-		};
+		}) as GameState;
 		await dbPut('games', game);
 		games = [...games, game];
 		return game;
