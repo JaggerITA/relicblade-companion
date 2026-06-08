@@ -21,7 +21,7 @@
 
 	<!-- Dialog -->
 	<div
-		class="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-surface-raised p-6 shadow-xl sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
+		class="fixed bottom-16 left-0 right-0 z-50 rounded-t-2xl bg-surface-raised p-6 shadow-xl sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="modal-title"

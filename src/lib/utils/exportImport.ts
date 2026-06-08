@@ -7,7 +7,7 @@ export function downloadCollection(collection: Collection): void {
 	const url = URL.createObjectURL(blob);
 	const a = document.createElement('a');
 	a.href = url;
-	a.download = `relicblade-collection-${new Date().toISOString().slice(0, 10)}.json`;
+	a.download = `relicblade-backup-${new Date().toISOString().slice(0, 10)}.json`;
 	document.body.appendChild(a);
 	a.click();
 	document.body.removeChild(a);
@@ -24,7 +24,7 @@ export async function readCollectionFile(file: File): Promise<Collection> {
 		!Array.isArray((data as Record<string, unknown>).characters) ||
 		!Array.isArray((data as Record<string, unknown>).upgrades)
 	) {
-		throw new Error('Invalid collection file — missing characters or upgrades arrays.');
+		throw new Error('Invalid backup file — missing characters or upgrades arrays.');
 	}
 	return data as Collection;
 }

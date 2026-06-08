@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import { UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
+	import { ACTION_TYPE_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
+	import type { Action, ActionType, UpgradeSlotType } from '$lib/models/Character.js';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
-	import type { UpgradeSlotType } from '$lib/models/Character.js';
 
 	const UPGRADE_SLOT_TYPES: { value: UpgradeSlotType; label: string }[] = [
 		{ value: 'weapon', label: 'Weapon' },
@@ -11,6 +11,16 @@
 		{ value: 'potion', label: 'Potion' },
 		{ value: 'spell', label: 'Spell' },
 		{ value: 'item', label: 'Item' }
+	];
+
+	const ACTION_TYPES: { value: ActionType; label: string }[] = [
+		{ value: 'melee-weapon', label: 'Melee Weapon' },
+		{ value: 'ranged-weapon', label: 'Ranged Weapon' },
+		{ value: 'ranged-or-melee-weapon', label: 'Ranged or Melee Weapon' },
+		{ value: 'natural-weapon', label: 'Natural Weapon' },
+		{ value: 'passive-ability', label: 'Passive Ability' },
+		{ value: 'magic-spell', label: 'Magic Spell' },
+		{ value: 'special-ability', label: 'Special Ability' }
 	];
 
 	interface Props {
@@ -29,7 +39,15 @@
 	let restrictions = $state(untrack(() => initial.restrictions?.join(', ') ?? ''));
 	let errors = $state<Record<string, string>>({});
 
+	// Optional action this upgrade grants
+	let hasAction = $state(untrack(() => !!initial.action));
+	function blankAction(): Action {
+		return { name: '', type: 'melee-weapon', diceCount: undefined, activationValue: '', effect: '', bonus: '' };
+	}
+	let action = $state<Action>(untrack(() => initial.action ? { ...initial.action } : blankAction()));
+
 	const SelectedSlotIcon = $derived(UPGRADE_SLOT_TYPE_ICONS[type]);
+	const ActionIcon = $derived(ACTION_TYPE_ICONS[action.type]);
 
 	function validate(): boolean {
 		const e: Record<string, string> = {};
@@ -41,11 +59,13 @@
 
 	function handleSubmit() {
 		if (!validate()) return;
+		const plainAction = hasAction ? ($state.snapshot(action) as Action) : undefined;
 		onsubmit({
 			name: name.trim(),
 			type,
 			cost,
 			effect,
+			action: plainAction,
 			restrictions: restrictions.split(',').map((r) => r.trim()).filter(Boolean),
 			source: initial.source ?? 'manual'
 		});
@@ -109,6 +129,88 @@
 			class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
 		></textarea>
 	</div>
+
+	<!-- Optional structured action -->
+	<section class="space-y-3 rounded-lg border border-white/10 p-3">
+		<label class="flex items-center gap-2 text-sm font-medium">
+			<input
+				type="checkbox"
+				bind:checked={hasAction}
+				class="h-4 w-4 rounded border-white/30 bg-transparent text-accent focus:ring-accent"
+			/>
+			This upgrade grants an action
+		</label>
+
+		{#if hasAction}
+			<div class="space-y-2">
+				<div class="flex gap-2">
+					<input
+						type="text"
+						bind:value={action.name}
+						placeholder="Action name"
+						class="flex-1 rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+					/>
+					<span
+						class="flex shrink-0 items-center justify-center rounded bg-surface px-2 text-on-muted"
+						aria-hidden="true"
+					>
+						<ActionIcon class="h-4 w-4" />
+					</span>
+					<select
+						bind:value={action.type}
+						class="rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+					>
+						{#each ACTION_TYPES as t}
+							<option value={t.value}>{t.label}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="grid grid-cols-3 gap-2">
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for="action-dice">Dice</label>
+						<input
+							id="action-dice"
+							type="number"
+							min="0"
+							value={action.diceCount ?? ''}
+							oninput={(e) => {
+								const v = (e.target as HTMLInputElement).value;
+								action.diceCount = v === '' ? undefined : parseInt(v) || 0;
+							}}
+							placeholder="e.g. 2"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for="action-activation">Activation</label>
+						<input
+							id="action-activation"
+							type="text"
+							bind:value={action.activationValue}
+							placeholder="e.g. 4+"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+					<div>
+						<label class="mb-0.5 block text-xs text-on-muted" for="action-bonus">Bonus</label>
+						<input
+							id="action-bonus"
+							type="text"
+							bind:value={action.bonus}
+							placeholder="e.g. +3"
+							class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+						/>
+					</div>
+				</div>
+				<input
+					type="text"
+					bind:value={action.effect}
+					placeholder="Action effect description"
+					class="w-full rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+				/>
+			</div>
+		{/if}
+	</section>
 
 	<div>
 		<label class="mb-1 block text-sm" for="urestrictions">Restrictions (comma-separated keywords)</label>

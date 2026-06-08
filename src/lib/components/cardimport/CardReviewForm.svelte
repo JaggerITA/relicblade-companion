@@ -49,6 +49,13 @@
 	let health = $state(untrack(() => initial.stats?.health ?? 1));
 	let keywords = $state(untrack(() => initial.keywords?.join(', ') ?? ''));
 	let notes = $state(untrack(() => initial.notes ?? ''));
+	let criticalHealthBoxes = $state<number[]>(untrack(() => initial.criticalHealthBoxes ?? []));
+
+	function toggleCritBox(pos: number): void {
+		criticalHealthBoxes = criticalHealthBoxes.includes(pos)
+			? criticalHealthBoxes.filter((p) => p !== pos)
+			: [...criticalHealthBoxes, pos].sort((a, b) => a - b);
+	}
 	let upgradeSlotCounts = $state<Record<UpgradeSlotType, number>>(
 		untrack(() => countSlots(initial.upgradeSlots ?? []))
 	);
@@ -103,6 +110,7 @@
 			keywords: keywords.split(',').map((k) => k.trim()).filter(Boolean),
 			actions: plainActions.filter((a) => a.name.trim()),
 			upgradeSlots: UPGRADE_SLOT_TYPES.flatMap(({ value }) => Array(upgradeSlotCounts[value]).fill(value)),
+			criticalHealthBoxes: criticalHealthBoxes.length ? ($state.snapshot(criticalHealthBoxes) as number[]) : undefined,
 			notes,
 			source: initial.source ?? 'manual',
 			ocrConfidence: initial.ocrConfidence,
@@ -202,6 +210,32 @@
 			{/each}
 		</div>
 	</section>
+
+	<!-- Critical wound boxes -->
+	{#if health > 0}
+		<section class="space-y-2">
+			<h2 class="text-sm font-semibold uppercase tracking-wider text-on-muted">Critical Wound Boxes</h2>
+			<p class="text-xs text-on-muted">
+				Tap the HP box positions that have a 🦴 broken-bone icon on your physical card. When
+				damaged, each critical box applies −1 AD automatically during play.
+			</p>
+			<div class="flex flex-wrap gap-1">
+				{#each Array.from({ length: health }, (_, i) => i + 1) as pos (pos)}
+					<button
+						type="button"
+						onclick={() => toggleCritBox(pos)}
+						aria-pressed={criticalHealthBoxes.includes(pos)}
+						class="flex h-8 w-8 items-center justify-center rounded border text-xs font-medium transition-colors
+							{criticalHealthBoxes.includes(pos)
+								? 'border-amber-500 bg-amber-500/80 text-white'
+								: 'border-white/20 text-on-muted hover:bg-white/5'}"
+					>
+						{pos}
+					</button>
+				{/each}
+			</div>
+		</section>
+	{/if}
 
 	<!-- Actions -->
 	<section class="space-y-3">

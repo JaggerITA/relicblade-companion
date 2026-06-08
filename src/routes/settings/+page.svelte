@@ -4,6 +4,7 @@
 	import Button from '$lib/components/shared/Button.svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 	import { downloadCollection, readCollectionFile, daysSinceBackup } from '$lib/utils/exportImport.js';
 	import { settingsGet } from '$lib/utils/db.js';
@@ -17,6 +18,7 @@
 	onMount(async () => {
 		lastBackupDate = await settingsGet<string>('lastBackupDate');
 		await collectionStore.hydrate();
+		await rosterStore.hydrate();
 	});
 
 	const daysSince = $derived(daysSinceBackup(lastBackupDate));
@@ -32,10 +34,13 @@
 	);
 
 	function handleExport() {
-		const data = collectionStore.exportCollection();
+		const data = {
+			...collectionStore.exportCollection(),
+			rosters: $state.snapshot(rosterStore.rosters)
+		};
 		downloadCollection(data);
 		lastBackupDate = new Date().toISOString();
-		toastStore.success('Collection exported successfully');
+		toastStore.success('Backup exported successfully');
 	}
 
 	function handleFileSelect(e: Event) {
@@ -53,10 +58,14 @@
 		try {
 			const data = await readCollectionFile(importFile);
 			await collectionStore.importCollection(data, importMode);
+			if (data.rosters?.length) {
+				await rosterStore.importRosters(data.rosters, importMode);
+			}
+			const rosterCount = data.rosters?.length ?? 0;
 			toastStore.success(
 				importMode === 'replace'
-					? 'Collection replaced successfully'
-					: `Imported ${data.characters.length} characters and ${data.upgrades.length} upgrades`
+					? 'Backup replaced successfully'
+					: `Imported ${data.characters.length} characters, ${data.upgrades.length} upgrades, ${rosterCount} rosters`
 			);
 		} catch (err) {
 			toastStore.error(err instanceof Error ? err.message : 'Import failed');
@@ -89,10 +98,10 @@
 		</div>
 
 		<Button variant="primary" onclick={handleExport}>
-			↓ Export collection
+			↓ Export backup
 		</Button>
 		<p class="mt-1 text-xs text-on-muted">
-			{collectionStore.characters.length} characters · {collectionStore.upgrades.length} upgrades
+			{collectionStore.characters.length} characters · {collectionStore.upgrades.length} upgrades · {rosterStore.rosters.length} rosters
 		</p>
 	</section>
 
@@ -102,7 +111,7 @@
 		<p class="mb-3 text-sm text-on-muted">Load a previously exported JSON backup.</p>
 
 		<label class="btn-primary inline-flex cursor-pointer items-center justify-center rounded-lg px-4 py-2 font-medium">
-			↑ Import collection
+			↑ Import backup
 			<input
 				type="file"
 				accept=".json,application/json"
@@ -124,7 +133,7 @@
 </div>
 
 <!-- Import mode modal -->
-<Modal open={showImportModal} title="Import collection" onclose={() => (showImportModal = false)}>
+<Modal open={showImportModal} title="Import backup" onclose={() => (showImportModal = false)}>
 	{#snippet children()}
 		<p class="mb-4 text-sm text-on-muted">
 			File: <span class="font-medium text-on-surface">{importFile?.name}</span>

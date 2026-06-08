@@ -2,6 +2,12 @@ import type { Character } from '$lib/models/Character.js';
 import type { Roster, RosterEntry } from '$lib/models/Roster.js';
 import type { Upgrade } from '$lib/models/Upgrade.js';
 
+/** True when the same characterId appears more than once in a roster's entries. Used to validate JSON imports. */
+export function hasDuplicateEntries(roster: Roster): boolean {
+	const ids = roster.entries.map((e) => e.characterId);
+	return new Set(ids).size !== ids.length;
+}
+
 /** Sum of a character's base cost plus all of its equipped upgrades' costs. */
 export function entryInfluence(character: Character, equippedUpgrades: Upgrade[]): number {
 	return character.cost + equippedUpgrades.reduce((sum, u) => sum + u.cost, 0);

@@ -117,6 +117,28 @@ function createRosterStore() {
 		await persist({ ...roster, entries });
 	}
 
+	/** Import rosters from a backup. Deduplicates entries by characterId to guard against malformed exports. */
+	async function importRosters(incoming: Roster[], mode: 'merge' | 'replace'): Promise<void> {
+		if (mode === 'replace') {
+			for (const r of rosters) await dbDelete('rosters', r.id);
+			rosters = [];
+		}
+		for (const r of incoming) {
+			const seen = new Set<string>();
+			const clean: Roster = {
+				...r,
+				entries: r.entries.filter((e) => {
+					if (seen.has(e.characterId)) return false;
+					seen.add(e.characterId);
+					return true;
+				})
+			};
+			await dbPut('rosters', clean);
+			if (!rosters.find((x) => x.id === clean.id)) rosters = [...rosters, clean];
+			else rosters = rosters.map((x) => (x.id === clean.id ? clean : x));
+		}
+	}
+
 	return {
 		get rosters() { return rosters; },
 		get loaded() { return loaded; },
@@ -128,7 +150,8 @@ function createRosterStore() {
 		addEntry,
 		removeEntry,
 		equipUpgrade,
-		unequipUpgrade
+		unequipUpgrade,
+		importRosters
 	};
 }
 
