@@ -23,6 +23,8 @@
 	let upgradeTargetEntryId = $state<string | null>(null);
 	let expandedEntryId = $state<string | null>(null);
 	let expandedUpgradeKey = $state<string | null>(null);
+	let confirmRemoveEntry = $state<{ entryId: string; name: string } | null>(null);
+	let confirmUnequip = $state<{ entryId: string; upgradeId: string; name: string } | null>(null);
 
 	function toggleEntry(entryId: string) {
 		expandedEntryId = expandedEntryId === entryId ? null : entryId;
@@ -104,7 +106,7 @@
 									<div class="ml-3 flex shrink-0 items-center gap-2">
 										<span class="text-sm font-semibold text-accent">{entry.entryInfluence} inf</span>
 										<button
-											onclick={() => rosterStore.removeEntry(roster.id, entry.entryId)}
+											onclick={() => (confirmRemoveEntry = { entryId: entry.entryId, name: character.name })}
 											class="text-on-muted hover:text-on-surface"
 											aria-label="Remove {character.name} from roster"
 										>✕</button>
@@ -145,7 +147,7 @@
 														<div class="ml-3 flex shrink-0 items-center gap-2">
 															<span>{upgrade.cost} inf</span>
 															<button
-																onclick={() => rosterStore.unequipUpgrade(roster.id, entry.entryId, upgradeId)}
+																onclick={() => (confirmUnequip = { entryId: entry.entryId, upgradeId, name: upgrade.name })}
 																class="hover:text-on-surface"
 																aria-label="Unequip {upgrade.name}"
 															>✕</button>
@@ -217,6 +219,46 @@
 			onclose={() => (upgradeTargetEntryId = null)}
 		/>
 	{/if}
+
+	<Modal
+		open={confirmRemoveEntry !== null}
+		title="Remove {confirmRemoveEntry?.name}?"
+		onclose={() => (confirmRemoveEntry = null)}
+	>
+		{#snippet children()}
+			<p class="text-on-muted">This will remove {confirmRemoveEntry?.name} and any equipped upgrades from this roster.</p>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="ghost" onclick={() => (confirmRemoveEntry = null)}>Cancel</Button>
+			<Button
+				variant="danger"
+				onclick={() => {
+					if (confirmRemoveEntry) rosterStore.removeEntry(roster.id, confirmRemoveEntry.entryId);
+					confirmRemoveEntry = null;
+				}}
+			>Remove</Button>
+		{/snippet}
+	</Modal>
+
+	<Modal
+		open={confirmUnequip !== null}
+		title="Unequip {confirmUnequip?.name}?"
+		onclose={() => (confirmUnequip = null)}
+	>
+		{#snippet children()}
+			<p class="text-on-muted">{confirmUnequip?.name} will be removed from this character's equipped upgrades.</p>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="ghost" onclick={() => (confirmUnequip = null)}>Cancel</Button>
+			<Button
+				variant="danger"
+				onclick={() => {
+					if (confirmUnequip) rosterStore.unequipUpgrade(roster.id, confirmUnequip.entryId, confirmUnequip.upgradeId);
+					confirmUnequip = null;
+				}}
+			>Unequip</Button>
+		{/snippet}
+	</Modal>
 
 	<Modal open={confirmDelete} title="Delete roster?" onclose={() => (confirmDelete = false)}>
 		{#snippet children()}

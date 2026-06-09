@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import Modal from '$lib/components/shared/Modal.svelte';
 	import IconLegend from '$lib/components/shared/IconLegend.svelte';
 	import { ACTION_TYPE_ICONS, STAT_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import type { Action, ActionType, Character, Path, UpgradeSlotType } from '$lib/models/Character.js';
@@ -96,6 +97,8 @@
 	function removeAction(i: number) {
 		actions = actions.filter((_, idx) => idx !== i);
 	}
+
+	let confirmRemoveActionIdx = $state<number | null>(null);
 
 	function handleSubmit() {
 		if (!validate()) return;
@@ -265,7 +268,7 @@
 					/>
 					<button
 						type="button"
-						onclick={() => removeAction(i)}
+						onclick={() => (confirmRemoveActionIdx = i)}
 						class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface text-on-muted hover:text-on-surface"
 						aria-label="Remove action"
 					>✕</button>
@@ -384,3 +387,24 @@
 		<Button variant="primary" type="submit">Save card</Button>
 	</div>
 </form>
+
+<!-- Remove action confirm -->
+<Modal
+	open={confirmRemoveActionIdx !== null}
+	title="Remove action?"
+	onclose={() => (confirmRemoveActionIdx = null)}
+>
+	{#snippet children()}
+		<p class="text-on-muted">This cannot be undone.</p>
+	{/snippet}
+	{#snippet actions()}
+		<Button variant="ghost" onclick={() => (confirmRemoveActionIdx = null)}>Cancel</Button>
+		<Button
+			variant="danger"
+			onclick={() => {
+				if (confirmRemoveActionIdx !== null) removeAction(confirmRemoveActionIdx);
+				confirmRemoveActionIdx = null;
+			}}
+		>Remove</Button>
+	{/snippet}
+</Modal>
