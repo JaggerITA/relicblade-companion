@@ -7,6 +7,8 @@
 	import InfluenceBar from '$lib/components/listbuilder/InfluenceBar.svelte';
 	import CharacterPickerSheet from '$lib/components/listbuilder/CharacterPickerSheet.svelte';
 	import UpgradePickerSheet from '$lib/components/listbuilder/UpgradePickerSheet.svelte';
+	import CharacterPreview from '$lib/components/listbuilder/CharacterPreview.svelte';
+	import UpgradePreview from '$lib/components/listbuilder/UpgradePreview.svelte';
 	import { UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
@@ -19,6 +21,16 @@
 	let confirmDelete = $state(false);
 	let showCharacterPicker = $state(false);
 	let upgradeTargetCharacterId = $state<string | null>(null);
+	let expandedCharId = $state<string | null>(null);
+	let expandedUpgradeKey = $state<string | null>(null);
+
+	function toggleChar(charId: string) {
+		expandedCharId = expandedCharId === charId ? null : charId;
+		expandedUpgradeKey = null;
+	}
+	function toggleUpgrade(key: string) {
+		expandedUpgradeKey = expandedUpgradeKey === key ? null : key;
+	}
 
 	$effect(() => {
 		rosterStore.hydrate();
@@ -70,61 +82,95 @@
 					{#each roster.entries as entry (entry.characterId)}
 						{@const character = collectionStore.getCharacter(entry.characterId)}
 						{#if character}
-							<li class="card">
-								<div class="flex items-center justify-between">
-									<div class="min-w-0">
-										<p class="truncate font-semibold">{character.name}</p>
-										<p class="truncate text-xs text-on-muted">
-											<span class="capitalize">{character.path}</span>
-											{#if character.faction} · {character.faction}{/if}
-										</p>
-									</div>
-									<div class="ml-3 flex shrink-0 items-center gap-3">
+							{@const charExpanded = expandedCharId === entry.characterId}
+							<li class="card overflow-hidden p-0">
+								<!-- Character header row -->
+								<div class="flex items-center justify-between px-3 py-2">
+									<button
+										type="button"
+										onclick={() => toggleChar(entry.characterId)}
+										class="flex min-w-0 flex-1 items-center gap-2 text-left"
+										aria-expanded={charExpanded}
+									>
+										<span class="min-w-0">
+											<p class="truncate font-semibold">{character.name}</p>
+											<p class="truncate text-xs text-on-muted capitalize">
+												{character.path}{#if character.faction} · {character.faction}{/if}
+											</p>
+										</span>
+										<span class="ml-auto shrink-0 text-xs text-on-muted" aria-hidden="true">
+											{charExpanded ? '▴' : '▾'}
+										</span>
+									</button>
+									<div class="ml-3 flex shrink-0 items-center gap-2">
 										<span class="text-sm font-semibold text-accent">{entry.entryInfluence} inf</span>
 										<button
 											onclick={() => rosterStore.removeEntry(roster.id, entry.characterId)}
 											class="text-on-muted hover:text-on-surface"
 											aria-label="Remove {character.name} from roster"
-										>
-											✕
-										</button>
+										>✕</button>
 									</div>
 								</div>
 
+								<!-- Character preview -->
+								{#if charExpanded}
+									<div class="border-t border-white/10 px-3 pb-3 pt-2">
+										<CharacterPreview {character} />
+									</div>
+								{/if}
+
+								<!-- Equipped upgrades -->
 								{#if entry.equippedUpgradeIds.length > 0}
-									<ul class="mt-2 space-y-1 border-t border-white/10 pt-2">
+									<ul class="border-t border-white/10">
 										{#each entry.equippedUpgradeIds as upgradeId (upgradeId)}
 											{@const upgrade = collectionStore.getUpgrade(upgradeId)}
 											{#if upgrade}
+												{@const upKey = `${entry.characterId}-${upgradeId}`}
+												{@const upExpanded = expandedUpgradeKey === upKey}
 												{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[upgrade.type]}
-												<li class="flex items-center justify-between pl-3 text-sm text-on-muted">
-													<span class="flex min-w-0 items-center gap-1.5 truncate">
-														<span aria-hidden="true">▸</span>
-														<SlotIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-														<span class="truncate">{upgrade.name}</span>
-													</span>
-													<div class="ml-3 flex shrink-0 items-center gap-2">
-														<span>{upgrade.cost} inf</span>
+												<li class="border-b border-white/5 last:border-0">
+													<div class="flex items-center justify-between px-3 py-1.5 pl-5 text-sm text-on-muted">
 														<button
-															onclick={() => rosterStore.unequipUpgrade(roster.id, entry.characterId, upgradeId)}
-															class="text-on-muted hover:text-on-surface"
-															aria-label="Unequip {upgrade.name}"
+															type="button"
+															onclick={() => toggleUpgrade(upKey)}
+															class="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+															aria-expanded={upExpanded}
 														>
-															✕
+															<span aria-hidden="true">▸</span>
+															<SlotIcon class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+															<span class="truncate">{upgrade.name}</span>
+															<span class="ml-1 shrink-0 text-xs" aria-hidden="true">
+																{upExpanded ? '▴' : '▾'}
+															</span>
 														</button>
+														<div class="ml-3 flex shrink-0 items-center gap-2">
+															<span>{upgrade.cost} inf</span>
+															<button
+																onclick={() => rosterStore.unequipUpgrade(roster.id, entry.characterId, upgradeId)}
+																class="hover:text-on-surface"
+																aria-label="Unequip {upgrade.name}"
+															>✕</button>
+														</div>
 													</div>
+													{#if upExpanded}
+														<div class="border-t border-white/5 px-5 pb-2 pt-1.5">
+															<UpgradePreview {upgrade} />
+														</div>
+													{/if}
 												</li>
 											{/if}
 										{/each}
 									</ul>
 								{/if}
 
-								<button
-									onclick={() => (upgradeTargetCharacterId = entry.characterId)}
-									class="mt-2 pl-3 text-sm text-accent hover:underline"
-								>
-									▸ + add upgrade
-								</button>
+								<div class="px-3 py-2">
+									<button
+										onclick={() => (upgradeTargetCharacterId = entry.characterId)}
+										class="text-sm text-accent hover:underline"
+									>
+										▸ + add upgrade
+									</button>
+								</div>
 							</li>
 						{/if}
 					{/each}

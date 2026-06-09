@@ -2,6 +2,7 @@
 	import Button from '$lib/components/shared/Button.svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import HealthTracker from './HealthTracker.svelte';
+	import CharacterPreview from '$lib/components/listbuilder/CharacterPreview.svelte';
 	import { STAT_ICONS } from '$lib/constants/icons.js';
 	import { computeEffectiveStats, hasKeyword } from '$lib/utils/computeEffectiveStats.js';
 
@@ -32,6 +33,7 @@
 
 	let newCondition = $state('');
 	let confirmRevive = $state(false);
+	let showDetails = $state(false);
 
 	function addCondition(): void {
 		const trimmed = newCondition.trim();
@@ -145,6 +147,22 @@
 			class="min-w-0 max-w-[8rem] rounded-full border border-dashed border-white/20 bg-transparent px-2 py-0.5 text-xs text-on-muted placeholder:text-on-muted/60 focus:border-accent focus:outline-none"
 		/>
 	</div>
+
+	<!-- Card details toggle -->
+	<button
+		type="button"
+		onclick={() => (showDetails = !showDetails)}
+		class="mt-2 flex w-full items-center gap-1 text-xs text-on-muted hover:text-on-surface"
+		aria-expanded={showDetails}
+	>
+		<span aria-hidden="true">{showDetails ? '▴' : '▾'}</span>
+		{showDetails ? 'Hide details' : 'Show details'}
+	</button>
+	{#if showDetails}
+		<div class="mt-2 border-t border-white/10 pt-2">
+			<CharacterPreview {character} />
+		</div>
+	{/if}
 </div>
 
 <Modal open={confirmRevive} title="Revive {character.name}?" onclose={() => (confirmRevive = false)}>
