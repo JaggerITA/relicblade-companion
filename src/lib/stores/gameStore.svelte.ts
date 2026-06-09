@@ -143,10 +143,10 @@ function createGameStore() {
 		if (!game) return;
 		await persist({
 			...game,
-			models: mapModel(game, rosterOwner, characterId, (m) => ({
-				...m,
-				currentHealth: Math.min(m.maxHealth, Math.max(0, m.currentHealth + n))
-			}))
+			models: mapModel(game, rosterOwner, characterId, (m) => {
+				const newHealth = Math.min(m.maxHealth, Math.max(0, m.currentHealth + n));
+				return { ...m, currentHealth: newHealth, destroyed: m.destroyed && newHealth <= 0 };
+			})
 		});
 	}
 

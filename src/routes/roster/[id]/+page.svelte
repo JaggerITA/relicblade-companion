@@ -25,11 +25,6 @@
 		collectionStore.hydrate();
 	});
 
-	const availableCharacters = $derived.by(() => {
-		if (!roster) return [];
-		const usedIds = new Set(roster.entries.map((e) => e.characterId));
-		return collectionStore.characters.filter((c) => !usedIds.has(c.id));
-	});
 
 	const upgradeTarget = $derived(
 		upgradeTargetCharacterId ? collectionStore.getCharacter(upgradeTargetCharacterId) : undefined
@@ -155,7 +150,7 @@
 
 	<CharacterPickerSheet
 		open={showCharacterPicker}
-		characters={availableCharacters}
+		characters={collectionStore.characters}
 		onpick={(characterId) => {
 			rosterStore.addEntry(roster.id, characterId);
 			showCharacterPicker = false;

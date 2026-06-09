@@ -4,7 +4,6 @@
 
 	interface Props {
 		open: boolean;
-		/** Collection characters not yet in the roster. */
 		characters: Character[];
 		onpick: (characterId: string) => void;
 		onclose: () => void;
@@ -38,7 +37,7 @@
 		<div class="max-h-80 space-y-2 overflow-y-auto">
 			{#if characters.length === 0}
 				<p class="py-6 text-center text-sm text-on-muted">
-					Every card in your collection is already in this roster.
+					No characters in your collection yet.
 				</p>
 			{:else if filtered.length === 0}
 				<p class="py-6 text-center text-sm text-on-muted">No results for "{search}"</p>

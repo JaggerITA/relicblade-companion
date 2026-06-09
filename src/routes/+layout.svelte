@@ -21,7 +21,7 @@
 
 <Toast />
 
-<div class="flex min-h-screen flex-col">
+<div class="flex h-screen flex-col overflow-hidden">
 	<main class="flex-1 overflow-y-auto pb-16">
 		<slot />
 	</main>

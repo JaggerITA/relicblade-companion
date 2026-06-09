@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/shared/Button.svelte';
+	import Modal from '$lib/components/shared/Modal.svelte';
 	import HealthTracker from './HealthTracker.svelte';
 	import { STAT_ICONS } from '$lib/constants/icons.js';
 	import { computeEffectiveStats, hasKeyword } from '$lib/utils/computeEffectiveStats.js';
@@ -30,6 +31,7 @@
 	const ActionDiceIcon = STAT_ICONS.actionDice;
 
 	let newCondition = $state('');
+	let confirmRevive = $state(false);
 
 	function addCondition(): void {
 		const trimmed = newCondition.trim();
@@ -41,7 +43,7 @@
 
 <div
 	class="card transition-opacity {model.destroyed
-		? 'pointer-events-none opacity-25'
+		? 'opacity-25'
 		: stats.isDisabled
 			? 'opacity-50'
 			: ''}"
@@ -95,7 +97,10 @@
 			maxHealth={model.maxHealth}
 			isConstruct={model.isConstruct}
 			criticalBoxes={character.criticalHealthBoxes ?? []}
-			onadjust={onadjusthealth}
+			onadjust={(delta) => {
+				if (model.destroyed && delta > 0) confirmRevive = true;
+				else onadjusthealth(delta);
+			}}
 		/>
 	</div>
 
@@ -141,3 +146,13 @@
 		/>
 	</div>
 </div>
+
+<Modal open={confirmRevive} title="Revive {character.name}?" onclose={() => (confirmRevive = false)}>
+	{#snippet children()}
+		<p class="text-on-muted">This will restore {character.name} to 1 HP and return them to play.</p>
+	{/snippet}
+	{#snippet actions()}
+		<Button variant="ghost" onclick={() => (confirmRevive = false)}>Cancel</Button>
+		<Button variant="primary" onclick={() => { onadjusthealth(1); confirmRevive = false; }}>Revive</Button>
+	{/snippet}
+</Modal>

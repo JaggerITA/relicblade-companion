@@ -25,9 +25,6 @@
 		collectionStore.hydrate();
 	});
 
-	$effect(() => {
-		if (game?.initiative) activePlayer = game.initiative;
-	});
 
 	$effect(() => {
 		if (game?.phase !== 'recovery') recoveryResults = {};
@@ -190,8 +187,16 @@
 	<!-- Initiative roller -->
 	<InitiativeRoller
 		open={showInitiativeRoller}
-		onroll={() => gameStore.rollInitiative(id)}
-		ongiveinitiative={() => gameStore.giveInitiative(id)}
+		onroll={async () => {
+			const result = await gameStore.rollInitiative(id);
+			if (result.winner) activePlayer = result.winner;
+			return result;
+		}}
+		ongiveinitiative={() => {
+			const newWinner = (game?.initiative === 1 ? 2 : 1) as 1 | 2;
+			void gameStore.giveInitiative(id);
+			activePlayer = newWinner;
+		}}
 		onclose={() => (showInitiativeRoller = false)}
 	/>
 
