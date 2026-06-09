@@ -130,7 +130,9 @@
 				{#each models as model (model.entryId)}
 					{@const character = collectionStore.getCharacter(model.characterId)}
 					{@const roster = model.rosterOwner === 1 ? game.roster1 : game.roster2}
-					{@const entry = roster.entries.find((e) => e.entryId === model.entryId)}
+					{@const entry =
+						roster.entries.find((e) => e.entryId === model.entryId) ??
+						roster.entries.find((e) => e.characterId === model.characterId)}
 					{#if character}
 						<ModelCard
 							{character}
