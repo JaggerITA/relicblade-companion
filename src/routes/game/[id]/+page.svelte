@@ -46,23 +46,19 @@
 		recovery: 'Recovery'
 	};
 
-	function recoveryKey(m: ModelState): string {
-		return `${m.rosterOwner}-${m.characterId}`;
-	}
-
 	async function rollRecovery(m: ModelState): Promise<void> {
-		const result = await gameStore.rollRecovery(id, m.rosterOwner, m.characterId);
-		recoveryResults = { ...recoveryResults, [recoveryKey(m)]: result };
+		const result = await gameStore.rollRecovery(id, m.entryId);
+		recoveryResults = { ...recoveryResults, [m.entryId]: result };
 	}
 
 	async function manualRecovery(m: ModelState, success: boolean): Promise<void> {
-		recoveryResults = { ...recoveryResults, [recoveryKey(m)]: success };
-		if (success) await gameStore.heal(id, m.rosterOwner, m.characterId, 1);
+		recoveryResults = { ...recoveryResults, [m.entryId]: success };
+		if (success) await gameStore.heal(id, m.entryId, 1);
 	}
 
 	function adjustHealth(m: ModelState, delta: number): void {
-		if (delta < 0) gameStore.applyDamage(id, m.rosterOwner, m.characterId, -delta);
-		else if (delta > 0) gameStore.heal(id, m.rosterOwner, m.characterId, delta);
+		if (delta < 0) gameStore.applyDamage(id, m.entryId, -delta);
+		else if (delta > 0) gameStore.heal(id, m.entryId, delta);
 	}
 
 	async function handleDelete(): Promise<void> {
@@ -131,10 +127,10 @@
 			{#if models.length === 0}
 				<p class="py-12 text-center text-sm text-on-muted">No models in this roster.</p>
 			{:else}
-				{#each models as model (model.characterId)}
-					{@const character = collectionStore.getCharacter(model.characterId)}
+				{#each models as model (model.entryId)}
+					{@const character = collectionStore.getCharacter(model.entryId)}
 					{@const roster = model.rosterOwner === 1 ? game.roster1 : game.roster2}
-					{@const entry = roster.entries.find((e) => e.characterId === model.characterId)}
+					{@const entry = roster.entries.find((e) => e.entryId === model.entryId)}
 					{#if character}
 						<ModelCard
 							{character}
@@ -142,11 +138,11 @@
 							equippedUpgradeIds={entry?.equippedUpgradeIds ?? []}
 							onadjusthealth={(delta) => adjustHealth(model, delta)}
 							onadjustactiondice={(delta) =>
-								gameStore.adjustActionDiceModifier(id, model.rosterOwner, model.characterId, delta)}
+								gameStore.adjustActionDiceModifier(id, model.entryId, delta)}
 							ontoggleactivation={() =>
-								gameStore.activateModel(id, model.rosterOwner, model.characterId)}
+								gameStore.activateModel(id, model.entryId)}
 							ontogglecondition={(cond) =>
-								gameStore.toggleCondition(id, model.rosterOwner, model.characterId, cond)}
+								gameStore.toggleCondition(id, model.entryId, cond)}
 						/>
 					{/if}
 				{/each}
@@ -219,11 +215,10 @@
 				{#if disabledAll.length === 0}
 					<p class="py-4 text-center text-sm text-on-muted">No disabled models — no rolls needed.</p>
 				{:else}
-					{#each disabledAll as m (`${m.rosterOwner}-${m.characterId}`)}
+					{#each disabledAll as m (m.entryId)}
 						{@const character = collectionStore.getCharacter(m.characterId)}
 						{#if character}
-							{@const key = recoveryKey(m)}
-							{@const rolled = recoveryResults[key] ?? null}
+							{@const rolled = recoveryResults[m.entryId] ?? null}
 							<div class="flex items-center justify-between gap-3">
 								<div class="min-w-0">
 									<p class="truncate text-sm font-semibold">{character.name}</p>

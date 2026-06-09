@@ -3,6 +3,7 @@ import type { Roster } from './Roster.js';
 export type GamePhase = 'initiative' | 'activation' | 'recovery';
 
 export interface ModelState {
+	entryId: string;
 	characterId: string;
 	rosterOwner: 1 | 2;
 	currentHealth: number;

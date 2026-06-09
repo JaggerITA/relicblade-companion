@@ -10,6 +10,8 @@
 
 	const SpeedIcon = STAT_ICONS.speed;
 	const ArmorIcon = STAT_ICONS.armor;
+	const ActionDiceIcon = STAT_ICONS.actionDice;
+
 	import type { Character } from '$lib/models/Character.js';
 	import type { ModelState } from '$lib/models/GameState.js';
 
@@ -29,24 +31,22 @@
 	const equippedUpgrades = $derived(
 		equippedUpgradeIds.map((id) => collectionStore.getUpgrade(id)).filter((u) => u !== undefined)
 	);
-
 	const stats = $derived(computeEffectiveStats(character, model));
 
-	/** Detected via keyword match — exactly how `compatibleUpgrades` checks `restrictions` against `keywords` (Game Rules #type/construct|mount|rider|companion). */
 	const SPECIAL_TYPES = ['Construct', 'Mount', 'Rider', 'Companion'] as const;
 	const specialTypes = $derived(SPECIAL_TYPES.filter((type) => hasKeyword(character, type)));
 
-	const ActionDiceIcon = STAT_ICONS.actionDice;
-
-	let newCondition = $state('');
-	let confirmRevive = $state(false);
 	let showDetails = $state(false);
+	let confirmRevive = $state(false);
+	let showAddCondition = $state(false);
+	let newCondition = $state('');
 
-	function addCondition(): void {
+	function submitCondition(): void {
 		const trimmed = newCondition.trim();
 		if (!trimmed || model.conditions.includes(trimmed)) return;
 		ontogglecondition(trimmed);
 		newCondition = '';
+		showAddCondition = false;
 	}
 </script>
 
@@ -57,7 +57,13 @@
 			? 'opacity-50'
 			: ''}"
 >
-	<div class="flex items-start justify-between gap-3">
+	<!-- Tappable header → opens details sheet -->
+	<button
+		type="button"
+		onclick={() => (showDetails = true)}
+		class="flex min-h-touch w-full items-start justify-between gap-3 text-left"
+		aria-label="View {character.name} details"
+	>
 		<div class="min-w-0 flex-1">
 			<p class="truncate font-semibold">
 				{character.name}
@@ -70,9 +76,7 @@
 			{#if specialTypes.length > 0}
 				<div class="mt-1 flex flex-wrap gap-1">
 					{#each specialTypes as type (type)}
-						<span
-							class="rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-on-muted"
-						>
+						<span class="rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-on-muted">
 							{type}
 						</span>
 					{/each}
@@ -91,7 +95,6 @@
 			{/if}
 		</div>
 
-		<!-- Stats row: AD (primary, highlighted) + SPD and ARM (secondary) -->
 		<div class="flex shrink-0 flex-col items-end gap-1">
 			<span class="flex items-center gap-1 text-sm font-semibold text-accent">
 				<ActionDiceIcon class="h-4 w-4" aria-hidden="true" />
@@ -109,7 +112,7 @@
 				</span>
 			</span>
 		</div>
-	</div>
+	</button>
 
 	<div class="mt-3">
 		<HealthTracker
@@ -126,7 +129,7 @@
 
 	{#if !model.isConstruct}
 		<div class="mt-2 flex items-center gap-2 text-xs text-on-muted">
-			<span>AD modifier (poison, focus, etc.)</span>
+			<span>AD modifier</span>
 			<div class="ml-auto flex items-center gap-2">
 				<Button variant="ghost" onclick={() => onadjustactiondice(-1)}>−</Button>
 				<span class="w-5 text-center font-semibold text-on-surface">{model.actionDiceModifier}</span>
@@ -142,48 +145,41 @@
 			onchange={ontoggleactivation}
 			class="h-5 w-5 shrink-0 rounded border-white/30 bg-transparent text-accent focus:ring-accent"
 		/>
-		activated
+		Activated
 	</label>
 
+	<!-- Conditions -->
 	<div class="mt-1 flex flex-wrap items-center gap-1.5">
 		{#each model.conditions as condition (condition)}
 			<button
 				type="button"
 				onclick={() => ontogglecondition(condition)}
-				class="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs text-on-muted hover:bg-white/20"
+				class="flex min-h-touch items-center gap-1 rounded-full bg-white/10 px-3 text-xs text-on-muted hover:bg-white/20"
 				aria-label="Remove condition {condition}"
 			>
-				{condition}
-				<span aria-hidden="true">✕</span>
+				{condition} <span aria-hidden="true">✕</span>
 			</button>
 		{/each}
-		<input
-			type="text"
-			bind:value={newCondition}
-			onkeydown={(e) => e.key === 'Enter' && addCondition()}
-			placeholder="+ condition"
-			class="min-w-0 max-w-[8rem] rounded-full border border-dashed border-white/20 bg-transparent px-2 py-0.5 text-xs text-on-muted placeholder:text-on-muted/60 focus:border-accent focus:outline-none"
-		/>
+		<button
+			type="button"
+			onclick={() => (showAddCondition = true)}
+			class="flex min-h-touch items-center rounded-full border border-dashed border-white/20 px-3 text-xs text-on-muted hover:border-accent hover:text-accent"
+		>
+			+ condition
+		</button>
 	</div>
+</div>
 
-	<!-- Card details toggle -->
-	<button
-		type="button"
-		onclick={() => (showDetails = !showDetails)}
-		class="mt-2 flex min-h-touch w-full items-center gap-1 text-xs text-on-muted hover:text-on-surface"
-		aria-expanded={showDetails}
-	>
-		<span aria-hidden="true">{showDetails ? '▴' : '▾'}</span>
-		{showDetails ? 'Hide details' : 'Show details'}
-	</button>
-	{#if showDetails}
-		<div class="mt-2 space-y-3 border-t border-white/10 pt-2">
+<!-- Details sheet -->
+<Modal open={showDetails} title={character.name} onclose={() => (showDetails = false)}>
+	{#snippet children()}
+		<div class="space-y-4">
 			<CharacterPreview {character} />
 			{#if equippedUpgrades.length > 0}
 				<div class="space-y-2">
-					<p class="text-xs font-medium uppercase tracking-wider text-on-muted">Upgrades</p>
+					<p class="text-xs font-medium uppercase tracking-wider text-on-muted">Equipped upgrades</p>
 					{#each equippedUpgrades as upgrade (upgrade.id)}
-						<div class="rounded-lg bg-surface px-3 py-2">
+						<div class="rounded-lg bg-surface-overlay px-3 py-2">
 							<p class="mb-1 text-sm font-semibold">{upgrade.name}</p>
 							<UpgradePreview {upgrade} />
 						</div>
@@ -191,9 +187,32 @@
 				</div>
 			{/if}
 		</div>
-	{/if}
-</div>
+	{/snippet}
+	{#snippet actions()}
+		<Button variant="primary" onclick={() => (showDetails = false)}>Done</Button>
+	{/snippet}
+</Modal>
 
+<!-- Add condition modal -->
+<Modal open={showAddCondition} title="Add condition" onclose={() => { showAddCondition = false; newCondition = ''; }}>
+	{#snippet children()}
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			type="text"
+			bind:value={newCondition}
+			onkeydown={(e) => e.key === 'Enter' && submitCondition()}
+			placeholder="e.g. Poisoned, Stunned, Burning…"
+			class="w-full rounded-lg bg-surface-overlay px-4 py-3 text-base text-on-surface outline-none focus:ring-2 focus:ring-accent"
+			autofocus
+		/>
+	{/snippet}
+	{#snippet actions()}
+		<Button variant="ghost" onclick={() => { showAddCondition = false; newCondition = ''; }}>Cancel</Button>
+		<Button variant="primary" onclick={submitCondition}>Add</Button>
+	{/snippet}
+</Modal>
+
+<!-- Revive confirm -->
 <Modal open={confirmRevive} title="Revive {character.name}?" onclose={() => (confirmRevive = false)}>
 	{#snippet children()}
 		<p class="text-on-muted">This will restore {character.name} to 1 HP and return them to play.</p>

@@ -17,7 +17,16 @@ function createGameStore() {
 
 	async function hydrate() {
 		if (loaded) return;
-		games = await dbGetAll('games');
+		const raw = await dbGetAll('games');
+		// Migration: backfill entryId on ModelState entries created before this field was added
+		games = raw.map((g) => {
+			const needsMigration = g.models.some((m) => !m.entryId);
+			if (!needsMigration) return g;
+			let counter = 0;
+			const migrated = { ...g, models: g.models.map((m) => m.entryId ? m : { ...m, entryId: `migrated-${g.id}-${counter++}` }) };
+			void dbPut('games', migrated);
+			return migrated;
+		});
 		loaded = true;
 	}
 
@@ -48,6 +57,7 @@ function createGameStore() {
 			// Constructs enter play inert — fuel cells start empty (Game Rules #type/construct)
 			const isConstruct = hasKeyword(character, 'Construct');
 			states.push({
+				entryId: entry.entryId,
 				characterId: character.id,
 				rosterOwner: owner,
 				currentHealth: isConstruct ? 0 : character.stats.health,
@@ -92,11 +102,10 @@ function createGameStore() {
 
 	function mapModel(
 		game: GameState,
-		rosterOwner: 1 | 2,
-		characterId: string,
+		entryId: string,
 		fn: (model: ModelState) => ModelState
 	): ModelState[] {
-		return game.models.map((m) => (m.rosterOwner === rosterOwner && m.characterId === characterId ? fn(m) : m));
+		return game.models.map((m) => m.entryId === entryId ? fn(m) : m);
 	}
 
 	/** Both players roll D6 (reroll on tie). A decisive winner takes initiative and the round moves into Activation. */
@@ -123,21 +132,21 @@ function createGameStore() {
 		await persist({ ...game, initiative: game.initiative === 1 ? 2 : 1 });
 	}
 
-	async function activateModel(gameId: string, rosterOwner: 1 | 2, characterId: string): Promise<void> {
+	async function activateModel(gameId: string, entryId: string): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
 		await persist({
 			...game,
-			models: mapModel(game, rosterOwner, characterId, (m) => ({ ...m, activated: !m.activated }))
+			models: mapModel(game, entryId, (m) => ({ ...m, activated: !m.activated }))
 		});
 	}
 
-	async function applyDamage(gameId: string, rosterOwner: 1 | 2, characterId: string, n: number): Promise<void> {
+	async function applyDamage(gameId: string, entryId: string, n: number): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
 		await persist({
 			...game,
-			models: mapModel(game, rosterOwner, characterId, (m) => {
+			models: mapModel(game, entryId, (m) => {
 				// Already disabled: additional damage destroys the model (Game Rules: Disabled)
 				if (m.currentHealth <= 0) return { ...m, destroyed: true };
 				return { ...m, currentHealth: Math.max(0, m.currentHealth - n) };
@@ -145,12 +154,12 @@ function createGameStore() {
 		});
 	}
 
-	async function heal(gameId: string, rosterOwner: 1 | 2, characterId: string, n: number): Promise<void> {
+	async function heal(gameId: string, entryId: string, n: number): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
 		await persist({
 			...game,
-			models: mapModel(game, rosterOwner, characterId, (m) => {
+			models: mapModel(game, entryId, (m) => {
 				const newHealth = Math.min(m.maxHealth, Math.max(0, m.currentHealth + n));
 				return { ...m, currentHealth: newHealth, destroyed: m.destroyed && newHealth <= 0 };
 			})
@@ -158,34 +167,24 @@ function createGameStore() {
 	}
 
 	/** Single delta the player adjusts from their physical card — covers critical wounds, poison, focus, etc. (ADR-007). */
-	async function adjustActionDiceModifier(
-		gameId: string,
-		rosterOwner: 1 | 2,
-		characterId: string,
-		delta: number
-	): Promise<void> {
+	async function adjustActionDiceModifier(gameId: string, entryId: string, delta: number): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
 		await persist({
 			...game,
-			models: mapModel(game, rosterOwner, characterId, (m) => ({
+			models: mapModel(game, entryId, (m) => ({
 				...m,
 				actionDiceModifier: m.actionDiceModifier + delta
 			}))
 		});
 	}
 
-	async function toggleCondition(
-		gameId: string,
-		rosterOwner: 1 | 2,
-		characterId: string,
-		condition: string
-	): Promise<void> {
+	async function toggleCondition(gameId: string, entryId: string, condition: string): Promise<void> {
 		const game = getGame(gameId);
 		if (!game) return;
 		await persist({
 			...game,
-			models: mapModel(game, rosterOwner, characterId, (m) => ({
+			models: mapModel(game, entryId, (m) => ({
 				...m,
 				conditions: m.conditions.includes(condition)
 					? m.conditions.filter((c) => c !== condition)
@@ -202,14 +201,14 @@ function createGameStore() {
 	}
 
 	/** 1 D6 per disabled model; a 6 heals 1 box and makes the model activatable again next round. */
-	async function rollRecovery(gameId: string, rosterOwner: 1 | 2, characterId: string, rng?: () => number): Promise<boolean> {
+	async function rollRecovery(gameId: string, entryId: string, rng?: () => number): Promise<boolean> {
 		const game = getGame(gameId);
 		if (!game) return false;
 		const recovered = rollRecoveryDice(rng);
 		if (recovered) {
 			await persist({
 				...game,
-				models: mapModel(game, rosterOwner, characterId, (m) => ({ ...m, currentHealth: 1 }))
+				models: mapModel(game, entryId, (m) => ({ ...m, currentHealth: 1 }))
 			});
 		}
 		return recovered;

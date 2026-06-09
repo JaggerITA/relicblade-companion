@@ -152,10 +152,10 @@ describe('gameStore', () => {
 			registerCharacter(makeCharacter({ id: 'knight' }));
 			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
 
-			await gameStore.activateModel(game.id, 1, 'knight');
+			await gameStore.activateModel(game.id, game.models[0].entryId);
 			expect(gameStore.getGame(game.id)?.models[0].activated).toBe(true);
 
-			await gameStore.activateModel(game.id, 1, 'knight');
+			await gameStore.activateModel(game.id, game.models[0].entryId);
 			expect(gameStore.getGame(game.id)?.models[0].activated).toBe(false);
 		});
 	});
@@ -168,20 +168,20 @@ describe('gameStore', () => {
 
 		it('applies damage and clamps at 0', async () => {
 			const game = await startedGame();
-			await gameStore.applyDamage(game.id, 1, 'knight', 4);
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 4);
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(2);
 
-			await gameStore.applyDamage(game.id, 1, 'knight', 10);
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 10);
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(0);
 		});
 
 		it('heals and clamps at maxHealth', async () => {
 			const game = await startedGame();
-			await gameStore.applyDamage(game.id, 1, 'knight', 4);
-			await gameStore.heal(game.id, 1, 'knight', 1);
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 4);
+			await gameStore.heal(game.id, game.models[0].entryId, 1);
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(3);
 
-			await gameStore.heal(game.id, 1, 'knight', 10);
+			await gameStore.heal(game.id, game.models[0].entryId, 10);
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(6);
 		});
 	});
@@ -197,11 +197,11 @@ describe('gameStore', () => {
 			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 4 } }));
 			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
 
-			await gameStore.applyDamage(game.id, 1, 'knight', 4); // disable (currentHealth → 0)
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 4); // disable (currentHealth → 0)
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(0);
 			expect(gameStore.getGame(game.id)?.models[0].destroyed).toBe(false);
 
-			await gameStore.applyDamage(game.id, 1, 'knight', 1); // already disabled → destroyed
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 1); // already disabled → destroyed
 			expect(gameStore.getGame(game.id)?.models[0].destroyed).toBe(true);
 		});
 
@@ -213,8 +213,8 @@ describe('gameStore', () => {
 				makeRoster([])
 			);
 
-			await gameStore.applyDamage(game.id, 1, 'pig', 2); // disable pig
-			await gameStore.applyDamage(game.id, 1, 'pig', 1); // destroy pig
+			await gameStore.applyDamage(game.id, game.models[1].entryId, 2); // disable pig
+			await gameStore.applyDamage(game.id, game.models[1].entryId, 1); // destroy pig
 			const current = gameStore.getGame(game.id)!;
 			expect(gameStore.disabledModels(current, 1)).toHaveLength(0); // destroyed ≠ disabled (no recovery roll)
 			expect(gameStore.activatableModels(current, 1)).toHaveLength(1); // knight still activatable
@@ -224,8 +224,8 @@ describe('gameStore', () => {
 			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 4 } }));
 			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
 
-			await gameStore.applyDamage(game.id, 1, 'knight', 4); // disable
-			await gameStore.applyDamage(game.id, 1, 'knight', 1); // destroy
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 4); // disable
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 1); // destroy
 			const current = gameStore.getGame(game.id)!;
 			// No living models remain on side 1 — all (zero) are accounted for
 			expect(gameStore.allActivated(current, 1)).toBe(true);
@@ -237,11 +237,11 @@ describe('gameStore', () => {
 			registerCharacter(makeCharacter({ id: 'knight' }));
 			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
 
-			await gameStore.adjustActionDiceModifier(game.id, 1, 'knight', -1);
-			await gameStore.adjustActionDiceModifier(game.id, 1, 'knight', -1);
+			await gameStore.adjustActionDiceModifier(game.id, game.models[0].entryId, -1);
+			await gameStore.adjustActionDiceModifier(game.id, game.models[0].entryId, -1);
 			expect(gameStore.getGame(game.id)?.models[0].actionDiceModifier).toBe(-2);
 
-			await gameStore.adjustActionDiceModifier(game.id, 1, 'knight', 1);
+			await gameStore.adjustActionDiceModifier(game.id, game.models[0].entryId, 1);
 			expect(gameStore.getGame(game.id)?.models[0].actionDiceModifier).toBe(-1);
 		});
 	});
@@ -251,10 +251,10 @@ describe('gameStore', () => {
 			registerCharacter(makeCharacter({ id: 'knight' }));
 			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
 
-			await gameStore.toggleCondition(game.id, 1, 'knight', 'Stunned');
+			await gameStore.toggleCondition(game.id, game.models[0].entryId, 'Stunned');
 			expect(gameStore.getGame(game.id)?.models[0].conditions).toEqual(['Stunned']);
 
-			await gameStore.toggleCondition(game.id, 1, 'knight', 'Stunned');
+			await gameStore.toggleCondition(game.id, game.models[0].entryId, 'Stunned');
 			expect(gameStore.getGame(game.id)?.models[0].conditions).toEqual([]);
 		});
 	});
@@ -286,21 +286,21 @@ describe('gameStore', () => {
 
 		it('rollRecovery heals 1 box and reactivates on a 6, otherwise leaves the model disabled', async () => {
 			const game = await activeGame();
-			await gameStore.applyDamage(game.id, 1, 'knight', 6); // disable P1's model
+			await gameStore.applyDamage(game.id, game.models[0].entryId, 6); // disable P1's model
 			await gameStore.nextPhase(game.id); // → recovery
 
-			const failed = await gameStore.rollRecovery(game.id, 1, 'knight', seeded([4 / 6])); // rolls a 5
+			const failed = await gameStore.rollRecovery(game.id, game.models[0].entryId, seeded([4 / 6])); // rolls a 5
 			expect(failed).toBe(false);
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(0);
 
-			const succeeded = await gameStore.rollRecovery(game.id, 1, 'knight', seeded([5 / 6])); // rolls a 6
+			const succeeded = await gameStore.rollRecovery(game.id, game.models[0].entryId, seeded([5 / 6])); // rolls a 6
 			expect(succeeded).toBe(true);
 			expect(gameStore.getGame(game.id)?.models[0].currentHealth).toBe(1);
 		});
 
 		it('nextRound increments the round and resets phase/initiative/activation', async () => {
 			const game = await activeGame();
-			await gameStore.activateModel(game.id, 1, 'knight');
+			await gameStore.activateModel(game.id, game.models[0].entryId);
 			await gameStore.nextPhase(game.id); // → recovery
 			await gameStore.nextRound(game.id);
 
@@ -329,12 +329,12 @@ describe('gameStore', () => {
 			expect(gameStore.modelsForPlayer(game, 2)).toHaveLength(0);
 			expect(gameStore.allActivated(game, 1)).toBe(false);
 
-			await gameStore.applyDamage(game.id, 1, 'pig', 4); // disable the pig
+			await gameStore.applyDamage(game.id, game.models[1].entryId, 4); // disable the pig
 			let current = gameStore.getGame(game.id)!;
 			expect(gameStore.disabledModels(current, 1)).toHaveLength(1);
 			expect(gameStore.activatableModels(current, 1)).toHaveLength(1);
 
-			await gameStore.activateModel(game.id, 1, 'knight');
+			await gameStore.activateModel(game.id, game.models[0].entryId);
 			current = gameStore.getGame(game.id)!;
 			// knight activated, pig disabled → the round can end even though pig never "activates"
 			expect(gameStore.allActivated(current, 1)).toBe(true);
@@ -347,7 +347,7 @@ describe('gameStore', () => {
 			const game = await gameStore.start(makeRoster([{ characterId: 'knight' }]), makeRoster([]));
 			vi.mocked(dbPut).mockClear();
 
-			await gameStore.activateModel(game.id, 1, 'knight');
+			await gameStore.activateModel(game.id, game.models[0].entryId);
 
 			expect(dbPut).toHaveBeenCalledWith('games', expect.objectContaining({ id: game.id }));
 			expect(gameStore.games.find((g) => g.id === game.id)?.models[0].activated).toBe(true);

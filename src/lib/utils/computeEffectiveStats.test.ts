@@ -21,6 +21,7 @@ const baseCharacter: Character = {
 
 function baseModel(overrides: Partial<ModelState> = {}): ModelState {
 	return {
+		entryId: 'e1',
 		characterId: 'c1',
 		rosterOwner: 1,
 		currentHealth: 6,
