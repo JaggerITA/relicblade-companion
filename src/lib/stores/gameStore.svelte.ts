@@ -109,6 +109,13 @@ function createGameStore() {
 		return result;
 	}
 
+	/** Player manually declares the winner without rolling (physical dice path). */
+	async function setInitiative(gameId: string, winner: 1 | 2): Promise<void> {
+		const game = getGame(gameId);
+		if (!game) return;
+		await persist({ ...game, initiative: winner, phase: 'activation' });
+	}
+
 	/** Respite: the initiative winner may give it away (in exchange for a bonus recovery roll, granted by the UI). */
 	async function giveInitiative(gameId: string): Promise<void> {
 		const game = getGame(gameId);
@@ -249,6 +256,7 @@ function createGameStore() {
 		start,
 		deleteGame,
 		rollInitiative,
+		setInitiative,
 		giveInitiative,
 		activateModel,
 		applyDamage,

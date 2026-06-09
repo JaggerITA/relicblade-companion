@@ -55,6 +55,11 @@
 		recoveryResults = { ...recoveryResults, [recoveryKey(m)]: result };
 	}
 
+	async function manualRecovery(m: ModelState, success: boolean): Promise<void> {
+		recoveryResults = { ...recoveryResults, [recoveryKey(m)]: success };
+		if (success) await gameStore.heal(id, m.rosterOwner, m.characterId, 1);
+	}
+
 	function adjustHealth(m: ModelState, delta: number): void {
 		if (delta < 0) gameStore.applyDamage(id, m.rosterOwner, m.characterId, -delta);
 		else if (delta > 0) gameStore.heal(id, m.rosterOwner, m.characterId, delta);
@@ -192,6 +197,10 @@
 			if (result.winner) activePlayer = result.winner;
 			return result;
 		}}
+		onsetinitiative={(w) => {
+			void gameStore.setInitiative(id, w);
+			activePlayer = w;
+		}}
 		ongiveinitiative={() => {
 			const newWinner = (game?.initiative === 1 ? 2 : 1) as 1 | 2;
 			void gameStore.giveInitiative(id);
@@ -219,7 +228,11 @@
 								</div>
 								<div class="shrink-0">
 									{#if rolled === null}
-										<Button variant="ghost" onclick={() => rollRecovery(m)}>Roll 🎲</Button>
+										<div class="flex gap-1.5">
+											<Button variant="ghost" onclick={() => rollRecovery(m)}>🎲</Button>
+											<Button variant="ghost" onclick={() => manualRecovery(m, true)}>✓</Button>
+											<Button variant="ghost" onclick={() => manualRecovery(m, false)}>✗</Button>
+										</div>
 									{:else if rolled}
 										<span class="text-sm font-semibold text-green-400">✓ Recovered</span>
 									{:else}

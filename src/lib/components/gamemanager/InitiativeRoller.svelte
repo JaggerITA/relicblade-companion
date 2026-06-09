@@ -5,56 +5,86 @@
 
 	interface Props {
 		open: boolean;
-		/** Calls `gameStore.rollInitiative` — the store decides the winner and (if any) advances the phase. */
 		onroll: () => Promise<InitiativeResult>;
-		/** Respite: the winner gives initiative away for a bonus recovery roll (the bonus roll is just one more `rollRecovery` call from the recovery dialog). */
+		onsetinitiative: (winner: 1 | 2) => void;
 		ongiveinitiative: () => void;
 		onclose: () => void;
 	}
 
-	let { open, onroll, ongiveinitiative, onclose }: Props = $props();
+	let { open, onroll, onsetinitiative, ongiveinitiative, onclose }: Props = $props();
 
-	let result = $state<InitiativeResult | null>(null);
+	let winner = $state<1 | 2 | null>(null);
+	let dice = $state<{ p1: number; p2: number } | null>(null);
 	let rolling = $state(false);
 
 	async function roll(): Promise<void> {
 		rolling = true;
 		try {
-			result = await onroll();
+			const result = await onroll();
+			dice = { p1: result.p1, p2: result.p2 };
+			winner = result.winner ?? null;
 		} finally {
 			rolling = false;
 		}
 	}
 
+	function setManual(w: 1 | 2): void {
+		winner = w;
+		dice = null;
+		onsetinitiative(w);
+	}
+
 	function finish(): void {
-		result = null;
+		winner = null;
+		dice = null;
 		onclose();
 	}
 </script>
 
-<Modal open={open} title="Roll Initiative" onclose={finish}>
+<Modal open={open} title="Initiative" onclose={finish}>
 	{#snippet children()}
-		<div class="space-y-4 text-center">
-			{#if result}
-				<div class="flex items-center justify-center gap-6 text-2xl font-bold">
-					<span>P1 🎲 {result.p1}</span>
-					<span class="text-sm font-normal text-on-muted">vs</span>
-					<span>P2 🎲 {result.p2}</span>
-				</div>
-				{#if result.winner}
-					<p class="font-semibold text-accent">Player {result.winner} wins initiative ⚔</p>
-				{:else}
-					<p class="text-on-muted">Tie — roll again</p>
+		<div class="space-y-4">
+			{#if winner}
+				{#if dice}
+					<div class="flex items-center justify-center gap-6 text-2xl font-bold">
+						<span>P1 🎲 {dice.p1}</span>
+						<span class="text-sm font-normal text-on-muted">vs</span>
+						<span>P2 🎲 {dice.p2}</span>
+					</div>
 				{/if}
+				<p class="text-center font-semibold text-accent">Player {winner} wins initiative ⚔</p>
+			{:else if dice}
+				<div class="flex items-center justify-center gap-6 text-2xl font-bold">
+					<span>P1 🎲 {dice.p1}</span>
+					<span class="text-sm font-normal text-on-muted">vs</span>
+					<span>P2 🎲 {dice.p2}</span>
+				</div>
+				<p class="text-center text-on-muted">Tie — roll again</p>
 			{:else}
-				<p class="text-sm text-on-muted">
+				<p class="text-center text-sm text-on-muted">
 					Both players roll a D6. Highest wins initiative and activates first; ties are rerolled.
 				</p>
+				<div class="flex gap-2">
+					<button
+						type="button"
+						onclick={() => setManual(1)}
+						class="btn-ghost flex-1 text-sm"
+					>
+						P1 wins
+					</button>
+					<button
+						type="button"
+						onclick={() => setManual(2)}
+						class="btn-ghost flex-1 text-sm"
+					>
+						P2 wins
+					</button>
+				</div>
 			{/if}
 		</div>
 	{/snippet}
 	{#snippet actions()}
-		{#if result?.winner}
+		{#if winner}
 			<Button
 				variant="ghost"
 				onclick={() => {
@@ -67,7 +97,7 @@
 			<Button variant="primary" onclick={finish}>Continue</Button>
 		{:else}
 			<Button variant="primary" onclick={roll} disabled={rolling}>
-				{result ? 'Reroll' : 'Roll Initiative 🎲'}
+				{dice ? 'Reroll 🎲' : 'Roll Initiative 🎲'}
 			</Button>
 		{/if}
 	{/snippet}

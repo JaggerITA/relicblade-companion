@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import IconLegend from '$lib/components/shared/IconLegend.svelte';
 	import { ACTION_TYPE_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import type { Action, ActionType, UpgradeSlotType } from '$lib/models/Character.js';
 	import type { Upgrade } from '$lib/models/Upgrade.js';
@@ -140,6 +141,7 @@
 			/>
 			This upgrade grants an action
 		</label>
+		<IconLegend icons={ACTION_TYPE_ICONS} title="Action type icons" />
 
 		{#if hasAction}
 			<div class="space-y-2">

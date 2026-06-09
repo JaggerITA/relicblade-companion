@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import IconLegend from '$lib/components/shared/IconLegend.svelte';
 	import { ACTION_TYPE_ICONS, STAT_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import type { Action, ActionType, Character, Path, UpgradeSlotType } from '$lib/models/Character.js';
 
@@ -243,6 +244,7 @@
 			<h2 class="text-sm font-semibold uppercase tracking-wider text-on-muted">Actions</h2>
 			<button type="button" onclick={addAction} class="text-xs text-accent hover:underline">+ Add action</button>
 		</div>
+		<IconLegend icons={ACTION_TYPE_ICONS} title="Action type icons" />
 
 		{#each actions as action, i}
 			{@const ActionIcon = ACTION_TYPE_ICONS[action.type]}

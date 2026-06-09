@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Modal from '$lib/components/shared/Modal.svelte';
+	import IconLegend from '$lib/components/shared/IconLegend.svelte';
 	import { ACTION_TYPE_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import { compatibleUpgrades } from '$lib/utils/validation.js';
 	import type { Character } from '$lib/models/Character.js';
@@ -36,12 +37,15 @@
 
 <Modal open={open} title={`Equip upgrade — ${character.name}`} onclose={close}>
 	{#snippet children()}
-		<input
-			type="search"
-			bind:value={search}
-			placeholder="Search…"
-			class="mb-3 w-full rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
-		/>
+		<div class="mb-3 space-y-2">
+			<input
+				type="search"
+				bind:value={search}
+				placeholder="Search…"
+				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
+			/>
+			<IconLegend icons={UPGRADE_SLOT_TYPE_ICONS} title="Slot type icons" />
+		</div>
 		<div class="max-h-80 space-y-2 overflow-y-auto">
 			{#if compatible.length === 0}
 				<p class="py-6 text-center text-sm text-on-muted">
