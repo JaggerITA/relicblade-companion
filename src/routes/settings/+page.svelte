@@ -5,6 +5,7 @@
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
+	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 	import { downloadCollection, readCollectionFile, daysSinceBackup } from '$lib/utils/exportImport.js';
 	import { settingsGet } from '$lib/utils/db.js';
@@ -19,6 +20,7 @@
 		lastBackupDate = await settingsGet<string>('lastBackupDate');
 		await collectionStore.hydrate();
 		await rosterStore.hydrate();
+		await settingsStore.hydrate();
 	});
 
 	const daysSince = $derived(daysSinceBackup(lastBackupDate));
@@ -82,6 +84,33 @@
 		<a href="{base}/" class="text-on-muted hover:text-on-surface">‹</a>
 		<h1 class="text-xl font-bold">Settings</h1>
 	</header>
+
+	<!-- Layout -->
+	<section class="mb-6">
+		<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-on-muted">Layout</h2>
+		<div class="card">
+			<p class="mb-2 text-sm font-medium">Dominant hand</p>
+			<p class="mb-3 text-xs text-on-muted">
+				Moves floating buttons, tabs, and dialog actions to the side that's easiest to reach
+				with your thumb.
+			</p>
+			<div class="flex gap-2">
+				{#each (['right', 'left'] as const) as hand}
+					<button
+						type="button"
+						onclick={() => settingsStore.setHandedness(hand)}
+						class="flex min-h-touch flex-1 items-center justify-center rounded-lg text-sm capitalize transition-colors
+							{settingsStore.handedness === hand
+							? 'bg-accent text-white'
+							: 'bg-surface-overlay text-on-muted hover:bg-white/10'}"
+						aria-pressed={settingsStore.handedness === hand}
+					>
+						{hand}-handed
+					</button>
+				{/each}
+			</div>
+		</div>
+	</section>
 
 	<!-- Backup -->
 	<section class="mb-6">

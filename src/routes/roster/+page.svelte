@@ -2,6 +2,7 @@
 	import { base } from '$app/paths';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
 	import { usedInfluence } from '$lib/utils/validation.js';
 
 	$effect(() => {
@@ -58,7 +59,7 @@
 	{#if rosterStore.rosters.length > 0}
 		<a
 			href="{base}/roster/new"
-			class="fixed bottom-20 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl text-white shadow-lg"
+			class="fixed bottom-20 {settingsStore.handedness === 'left' ? 'left-4' : 'right-4'} flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl text-white shadow-lg"
 			aria-label="New roster"
 		>
 			+

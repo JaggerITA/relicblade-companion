@@ -3,6 +3,7 @@
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import { gameStore } from '$lib/stores/gameStore.svelte.js';
+	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 
 	let confirmDeleteId = $state<string | null>(null);
@@ -77,7 +78,7 @@
 	{#if gameStore.games.length > 0}
 		<a
 			href="{base}/game/new"
-			class="fixed bottom-20 right-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl text-white shadow-lg"
+			class="fixed bottom-20 {settingsStore.handedness === 'left' ? 'left-4' : 'right-4'} flex h-14 w-14 items-center justify-center rounded-full bg-accent text-2xl text-white shadow-lg"
 			aria-label="New game"
 		>
 			+

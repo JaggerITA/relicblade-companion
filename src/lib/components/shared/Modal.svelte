@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
+
 	interface Props {
 		open: boolean;
 		title: string;
@@ -29,7 +31,7 @@
 		<h2 id="modal-title" class="mb-4 text-lg font-semibold">{title}</h2>
 		{@render children()}
 		{#if actions}
-			<div class="mt-6 flex justify-end gap-3">
+			<div class="mt-6 flex gap-3 {settingsStore.handedness === 'left' ? 'justify-start' : 'justify-end'}">
 				{@render actions()}
 			</div>
 		{/if}

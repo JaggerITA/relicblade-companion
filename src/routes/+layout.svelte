@@ -3,6 +3,11 @@
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
 	import Toast from '$lib/components/shared/Toast.svelte';
+	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
+
+	$effect(() => {
+		settingsStore.hydrate();
+	});
 
 	const navItems = [
 		{ path: '/', label: 'Home', icon: '🏠' },
