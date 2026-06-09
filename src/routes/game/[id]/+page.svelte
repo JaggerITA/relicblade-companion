@@ -128,7 +128,7 @@
 				<p class="py-12 text-center text-sm text-on-muted">No models in this roster.</p>
 			{:else}
 				{#each models as model (model.entryId)}
-					{@const character = collectionStore.getCharacter(model.entryId)}
+					{@const character = collectionStore.getCharacter(model.characterId)}
 					{@const roster = model.rosterOwner === 1 ? game.roster1 : game.roster2}
 					{@const entry = roster.entries.find((e) => e.entryId === model.entryId)}
 					{#if character}
