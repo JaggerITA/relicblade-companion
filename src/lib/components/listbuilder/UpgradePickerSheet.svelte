@@ -77,7 +77,7 @@
 						<button
 							type="button"
 							onclick={() => toggle(upg.id)}
-							class="flex w-full items-center justify-between px-3 py-2 text-left hover:bg-white/10"
+							class="flex min-h-touch w-full items-center justify-between px-3 py-2 text-left hover:bg-white/10"
 							aria-expanded={expanded}
 						>
 							<div class="min-w-0">

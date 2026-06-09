@@ -152,7 +152,7 @@
 	<button
 		type="button"
 		onclick={() => (showDetails = !showDetails)}
-		class="mt-2 flex w-full items-center gap-1 text-xs text-on-muted hover:text-on-surface"
+		class="mt-2 flex min-h-touch w-full items-center gap-1 text-xs text-on-muted hover:text-on-surface"
 		aria-expanded={showDetails}
 	>
 		<span aria-hidden="true">{showDetails ? '▴' : '▾'}</span>

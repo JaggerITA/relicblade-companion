@@ -89,7 +89,7 @@
 									<button
 										type="button"
 										onclick={() => toggleChar(entry.characterId)}
-										class="flex min-w-0 flex-1 items-center gap-2 text-left"
+										class="flex min-h-touch min-w-0 flex-1 items-center gap-2 text-left"
 										aria-expanded={charExpanded}
 									>
 										<span class="min-w-0">
@@ -133,7 +133,7 @@
 														<button
 															type="button"
 															onclick={() => toggleUpgrade(upKey)}
-															class="flex min-w-0 flex-1 items-center gap-1.5 text-left"
+															class="flex min-h-touch min-w-0 flex-1 items-center gap-1.5 text-left"
 															aria-expanded={upExpanded}
 														>
 															<span aria-hidden="true">▸</span>
