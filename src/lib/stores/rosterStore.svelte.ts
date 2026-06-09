@@ -15,7 +15,15 @@ function createRosterStore() {
 
 	async function hydrate() {
 		if (loaded) return;
-		rosters = await dbGetAll('rosters');
+		const raw = await dbGetAll('rosters');
+		// Migration: backfill entryId on entries created before this field was added
+		rosters = raw.map((r) => {
+			const needsMigration = r.entries.some((e) => !e.entryId);
+			if (!needsMigration) return r;
+			const migrated = { ...r, entries: r.entries.map((e) => e.entryId ? e : { ...e, entryId: newId() }) };
+			void dbPut('rosters', migrated);
+			return migrated;
+		});
 		loaded = true;
 	}
 
