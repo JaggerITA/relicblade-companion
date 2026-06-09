@@ -68,8 +68,8 @@ describe('influence totals (ADR-006 dual mode)', () => {
 		['upg-2', makeUpgrade({ id: 'upg-2', cost: 2 })]
 	]);
 	const entries: RosterEntry[] = [
-		{ characterId: 'char-1', equippedUpgradeIds: ['upg-1', 'upg-2'], entryInfluence: 26 },
-		{ characterId: 'char-2', equippedUpgradeIds: [], entryInfluence: 30 }
+		{ entryId: 'e-1', characterId: 'char-1', equippedUpgradeIds: ['upg-1', 'upg-2'], entryInfluence: 26 },
+		{ entryId: 'e-2', characterId: 'char-2', equippedUpgradeIds: [], entryInfluence: 30 }
 	];
 
 	it('charactersInfluence sums only character costs', () => {

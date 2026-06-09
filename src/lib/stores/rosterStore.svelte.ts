@@ -84,33 +84,33 @@ function createRosterStore() {
 
 	async function addEntry(rosterId: string, characterId: string): Promise<void> {
 		const roster = getRoster(rosterId);
-		if (!roster || roster.entries.some((e) => e.characterId === characterId)) return;
-		const entry: RosterEntry = { characterId, equippedUpgradeIds: [], entryInfluence: 0 };
+		if (!roster) return;
+		const entry: RosterEntry = { entryId: newId(), characterId, equippedUpgradeIds: [], entryInfluence: 0 };
 		await persist({ ...roster, entries: [...roster.entries, entry] });
 	}
 
-	async function removeEntry(rosterId: string, characterId: string): Promise<void> {
+	async function removeEntry(rosterId: string, entryId: string): Promise<void> {
 		const roster = getRoster(rosterId);
 		if (!roster) return;
-		await persist({ ...roster, entries: roster.entries.filter((e) => e.characterId !== characterId) });
+		await persist({ ...roster, entries: roster.entries.filter((e) => e.entryId !== entryId) });
 	}
 
-	async function equipUpgrade(rosterId: string, characterId: string, upgradeId: string): Promise<void> {
+	async function equipUpgrade(rosterId: string, entryId: string, upgradeId: string): Promise<void> {
 		const roster = getRoster(rosterId);
 		if (!roster) return;
 		const entries = roster.entries.map((e) =>
-			e.characterId === characterId && !e.equippedUpgradeIds.includes(upgradeId)
+			e.entryId === entryId && !e.equippedUpgradeIds.includes(upgradeId)
 				? { ...e, equippedUpgradeIds: [...e.equippedUpgradeIds, upgradeId] }
 				: e
 		);
 		await persist({ ...roster, entries });
 	}
 
-	async function unequipUpgrade(rosterId: string, characterId: string, upgradeId: string): Promise<void> {
+	async function unequipUpgrade(rosterId: string, entryId: string, upgradeId: string): Promise<void> {
 		const roster = getRoster(rosterId);
 		if (!roster) return;
 		const entries = roster.entries.map((e) =>
-			e.characterId === characterId
+			e.entryId === entryId
 				? { ...e, equippedUpgradeIds: e.equippedUpgradeIds.filter((id) => id !== upgradeId) }
 				: e
 		);

@@ -20,12 +20,12 @@
 
 	let confirmDelete = $state(false);
 	let showCharacterPicker = $state(false);
-	let upgradeTargetCharacterId = $state<string | null>(null);
-	let expandedCharId = $state<string | null>(null);
+	let upgradeTargetEntryId = $state<string | null>(null);
+	let expandedEntryId = $state<string | null>(null);
 	let expandedUpgradeKey = $state<string | null>(null);
 
-	function toggleChar(charId: string) {
-		expandedCharId = expandedCharId === charId ? null : charId;
+	function toggleEntry(entryId: string) {
+		expandedEntryId = expandedEntryId === entryId ? null : entryId;
 		expandedUpgradeKey = null;
 	}
 	function toggleUpgrade(key: string) {
@@ -37,14 +37,13 @@
 		collectionStore.hydrate();
 	});
 
-
-	const upgradeTarget = $derived(
-		upgradeTargetCharacterId ? collectionStore.getCharacter(upgradeTargetCharacterId) : undefined
-	);
 	const upgradeTargetEntry = $derived(
-		roster && upgradeTargetCharacterId
-			? roster.entries.find((e) => e.characterId === upgradeTargetCharacterId)
+		roster && upgradeTargetEntryId
+			? roster.entries.find((e) => e.entryId === upgradeTargetEntryId)
 			: undefined
+	);
+	const upgradeTarget = $derived(
+		upgradeTargetEntry ? collectionStore.getCharacter(upgradeTargetEntry.characterId) : undefined
 	);
 </script>
 
@@ -79,16 +78,16 @@
 				</div>
 			{:else}
 				<ul class="space-y-2">
-					{#each roster.entries as entry (entry.characterId)}
+					{#each roster.entries as entry (entry.entryId)}
 						{@const character = collectionStore.getCharacter(entry.characterId)}
 						{#if character}
-							{@const charExpanded = expandedCharId === entry.characterId}
+							{@const charExpanded = expandedEntryId === entry.entryId}
 							<li class="card overflow-hidden p-0">
 								<!-- Character header row -->
 								<div class="flex items-center justify-between px-3 py-2">
 									<button
 										type="button"
-										onclick={() => toggleChar(entry.characterId)}
+										onclick={() => toggleEntry(entry.entryId)}
 										class="flex min-h-touch min-w-0 flex-1 items-center gap-2 text-left"
 										aria-expanded={charExpanded}
 									>
@@ -105,7 +104,7 @@
 									<div class="ml-3 flex shrink-0 items-center gap-2">
 										<span class="text-sm font-semibold text-accent">{entry.entryInfluence} inf</span>
 										<button
-											onclick={() => rosterStore.removeEntry(roster.id, entry.characterId)}
+											onclick={() => rosterStore.removeEntry(roster.id, entry.entryId)}
 											class="text-on-muted hover:text-on-surface"
 											aria-label="Remove {character.name} from roster"
 										>✕</button>
@@ -125,7 +124,7 @@
 										{#each entry.equippedUpgradeIds as upgradeId (upgradeId)}
 											{@const upgrade = collectionStore.getUpgrade(upgradeId)}
 											{#if upgrade}
-												{@const upKey = `${entry.characterId}-${upgradeId}`}
+												{@const upKey = `${entry.entryId}-${upgradeId}`}
 												{@const upExpanded = expandedUpgradeKey === upKey}
 												{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[upgrade.type]}
 												<li class="border-b border-white/5 last:border-0">
@@ -146,7 +145,7 @@
 														<div class="ml-3 flex shrink-0 items-center gap-2">
 															<span>{upgrade.cost} inf</span>
 															<button
-																onclick={() => rosterStore.unequipUpgrade(roster.id, entry.characterId, upgradeId)}
+																onclick={() => rosterStore.unequipUpgrade(roster.id, entry.entryId, upgradeId)}
 																class="hover:text-on-surface"
 																aria-label="Unequip {upgrade.name}"
 															>✕</button>
@@ -165,7 +164,7 @@
 
 								<div class="px-3 py-2">
 									<button
-										onclick={() => (upgradeTargetCharacterId = entry.characterId)}
+										onclick={() => (upgradeTargetEntryId = entry.entryId)}
 										class="text-sm text-accent hover:underline"
 									>
 										▸ + add upgrade
@@ -212,10 +211,10 @@
 			collectionUpgrades={collectionStore.upgrades}
 			upgradesById={collectionStore.upgradesById}
 			onpick={(upgradeId) => {
-				rosterStore.equipUpgrade(roster.id, upgradeTarget.id, upgradeId);
-				upgradeTargetCharacterId = null;
+				rosterStore.equipUpgrade(roster.id, upgradeTargetEntry.entryId, upgradeId);
+				upgradeTargetEntryId = null;
 			}}
-			onclose={() => (upgradeTargetCharacterId = null)}
+			onclose={() => (upgradeTargetEntryId = null)}
 		/>
 	{/if}
 

@@ -2,6 +2,7 @@
 export type LimitMode = 'standard' | 'threat';
 
 export interface RosterEntry {
+	entryId: string;
 	characterId: string;
 	equippedUpgradeIds: string[];
 	/** Full entry cost (character + all equipped upgrades). Validation uses this per limitMode. */

@@ -47,7 +47,7 @@ function makeRoster(entries: { characterId: string }[]): Roster {
 		faction: '',
 		limitMode: 'standard',
 		maxInfluence: 100,
-		entries: entries.map((e) => ({ characterId: e.characterId, equippedUpgradeIds: [], entryInfluence: 20 })),
+		entries: entries.map((e, i) => ({ entryId: `entry-${i}`, characterId: e.characterId, equippedUpgradeIds: [], entryInfluence: 20 })),
 		totalInfluence: 20,
 		createdAt: '',
 		updatedAt: ''
