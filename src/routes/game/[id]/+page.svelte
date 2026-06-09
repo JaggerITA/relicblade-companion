@@ -133,10 +133,13 @@
 			{:else}
 				{#each models as model (model.characterId)}
 					{@const character = collectionStore.getCharacter(model.characterId)}
+					{@const roster = model.rosterOwner === 1 ? game.roster1 : game.roster2}
+					{@const entry = roster.entries.find((e) => e.characterId === model.characterId)}
 					{#if character}
 						<ModelCard
 							{character}
 							{model}
+							equippedUpgradeIds={entry?.equippedUpgradeIds ?? []}
 							onadjusthealth={(delta) => adjustHealth(model, delta)}
 							onadjustactiondice={(delta) =>
 								gameStore.adjustActionDiceModifier(id, model.rosterOwner, model.characterId, delta)}

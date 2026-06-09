@@ -3,8 +3,10 @@
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import HealthTracker from './HealthTracker.svelte';
 	import CharacterPreview from '$lib/components/listbuilder/CharacterPreview.svelte';
-	import { STAT_ICONS } from '$lib/constants/icons.js';
+	import UpgradePreview from '$lib/components/listbuilder/UpgradePreview.svelte';
+	import { STAT_ICONS, UPGRADE_SLOT_TYPE_ICONS } from '$lib/constants/icons.js';
 	import { computeEffectiveStats, hasKeyword } from '$lib/utils/computeEffectiveStats.js';
+	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 
 	const SpeedIcon = STAT_ICONS.speed;
 	const ArmorIcon = STAT_ICONS.armor;
@@ -14,14 +16,19 @@
 	interface Props {
 		character: Character;
 		model: ModelState;
+		equippedUpgradeIds?: string[];
 		onadjusthealth: (delta: number) => void;
 		onadjustactiondice: (delta: number) => void;
 		ontoggleactivation: () => void;
 		ontogglecondition: (condition: string) => void;
 	}
 
-	let { character, model, onadjusthealth, onadjustactiondice, ontoggleactivation, ontogglecondition }: Props =
+	let { character, model, equippedUpgradeIds = [], onadjusthealth, onadjustactiondice, ontoggleactivation, ontogglecondition }: Props =
 		$props();
+
+	const equippedUpgrades = $derived(
+		equippedUpgradeIds.map((id) => collectionStore.getUpgrade(id)).filter((u) => u !== undefined)
+	);
 
 	const stats = $derived(computeEffectiveStats(character, model));
 
@@ -67,6 +74,17 @@
 							class="rounded-full border border-white/20 px-2 py-0.5 text-[10px] uppercase tracking-wide text-on-muted"
 						>
 							{type}
+						</span>
+					{/each}
+				</div>
+			{/if}
+			{#if equippedUpgrades.length > 0}
+				<div class="mt-1 flex flex-wrap gap-1">
+					{#each equippedUpgrades as upgrade (upgrade.id)}
+						{@const SlotIcon = UPGRADE_SLOT_TYPE_ICONS[upgrade.type]}
+						<span class="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-on-muted">
+							<SlotIcon class="h-3 w-3 shrink-0" aria-hidden="true" />
+							{upgrade.name}
 						</span>
 					{/each}
 				</div>
@@ -159,8 +177,19 @@
 		{showDetails ? 'Hide details' : 'Show details'}
 	</button>
 	{#if showDetails}
-		<div class="mt-2 border-t border-white/10 pt-2">
+		<div class="mt-2 space-y-3 border-t border-white/10 pt-2">
 			<CharacterPreview {character} />
+			{#if equippedUpgrades.length > 0}
+				<div class="space-y-2">
+					<p class="text-xs font-medium uppercase tracking-wider text-on-muted">Upgrades</p>
+					{#each equippedUpgrades as upgrade (upgrade.id)}
+						<div class="rounded-lg bg-surface px-3 py-2">
+							<p class="mb-1 text-sm font-semibold">{upgrade.name}</p>
+							<UpgradePreview {upgrade} />
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
