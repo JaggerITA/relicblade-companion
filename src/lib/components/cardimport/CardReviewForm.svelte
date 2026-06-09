@@ -249,29 +249,36 @@
 		{#each actions as action, i}
 			{@const ActionIcon = ACTION_TYPE_ICONS[action.type]}
 			<div class="rounded-lg bg-surface-overlay p-3 space-y-2">
-				<div class="flex gap-2">
-					<input
-						type="text"
-						bind:value={action.name}
-						placeholder="Action name"
-						class="flex-1 rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
-					/>
+				<!-- Row 1: icon + name + remove -->
+				<div class="flex items-center gap-2">
 					<span
-						class="flex shrink-0 items-center justify-center rounded bg-surface px-2 text-on-muted"
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface text-on-muted"
 						aria-hidden="true"
 					>
 						<ActionIcon class="h-4 w-4" />
 					</span>
-					<select
-						bind:value={action.type}
-						class="rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
-					>
-						{#each ACTION_TYPES as t}
-							<option value={t.value}>{t.label}</option>
-						{/each}
-					</select>
-					<button type="button" onclick={() => removeAction(i)} class="text-on-muted hover:text-on-surface" aria-label="Remove action">✕</button>
+					<input
+						type="text"
+						bind:value={action.name}
+						placeholder="Action name"
+						class="min-h-touch flex-1 rounded bg-surface px-2 py-1.5 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+					/>
+					<button
+						type="button"
+						onclick={() => removeAction(i)}
+						class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-surface text-on-muted hover:text-on-surface"
+						aria-label="Remove action"
+					>✕</button>
 				</div>
+				<!-- Row 2: type select full-width -->
+				<select
+					bind:value={action.type}
+					class="w-full rounded bg-surface px-2 py-2 text-sm text-on-surface outline-none focus:ring-1 focus:ring-accent"
+				>
+					{#each ACTION_TYPES as t}
+						<option value={t.value}>{t.label}</option>
+					{/each}
+				</select>
 				<div class="grid grid-cols-3 gap-2">
 					<div>
 						<label class="mb-0.5 block text-xs text-on-muted" for={`action-${i}-dice`}>Dice</label>
