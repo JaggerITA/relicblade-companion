@@ -1,12 +1,12 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Campaign } from '$lib/models/Campaign.js';
+import type { BaseTemplate, Campaign } from '$lib/models/Campaign.js';
 import type { Character } from '$lib/models/Character.js';
 import type { GameState } from '$lib/models/GameState.js';
 import type { Roster } from '$lib/models/Roster.js';
 import type { Upgrade } from '$lib/models/Upgrade.js';
 
 const DB_NAME = 'relicblade';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 interface RelicbladeDB extends DBSchema {
 	characters: {
@@ -34,13 +34,25 @@ interface RelicbladeDB extends DBSchema {
 		value: Campaign;
 		indexes: { 'by-updated': string };
 	};
+	baseTemplates: {
+		key: string;
+		value: BaseTemplate;
+		indexes: { 'by-updated': string };
+	};
 	settings: {
 		key: string;
 		value: unknown;
 	};
 }
 
-type StoreName = 'characters' | 'upgrades' | 'rosters' | 'games' | 'campaigns' | 'settings';
+type StoreName =
+	| 'characters'
+	| 'upgrades'
+	| 'rosters'
+	| 'games'
+	| 'campaigns'
+	| 'baseTemplates'
+	| 'settings';
 
 let dbPromise: Promise<IDBPDatabase<RelicbladeDB>> | null = null;
 
@@ -70,7 +82,10 @@ function getDb(): Promise<IDBPDatabase<RelicbladeDB>> {
 					ca.createIndex('by-updated', 'updatedAt');
 
 					db.createObjectStore('settings');
-					// v2+ migrations go here: if (oldVersion < 2) { ... }
+				}
+				if (oldVersion < 2) {
+					const bt = db.createObjectStore('baseTemplates', { keyPath: 'id' });
+					bt.createIndex('by-updated', 'updatedAt');
 				}
 			}
 		});

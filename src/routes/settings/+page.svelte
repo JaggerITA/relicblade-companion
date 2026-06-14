@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import Button from '$lib/components/shared/Button.svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
+	import { baseTemplateStore } from '$lib/stores/baseTemplateStore.svelte.js';
+	import { campaignStore } from '$lib/stores/campaignStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
@@ -15,11 +17,14 @@
 	let importFile = $state<File | null>(null);
 	let showImportModal = $state(false);
 	let importing = $state(false);
+	let confirmDeleteTemplateId = $state<string | null>(null);
 
 	onMount(async () => {
 		lastBackupDate = await settingsGet<string>('lastBackupDate');
 		await collectionStore.hydrate();
 		await rosterStore.hydrate();
+		await campaignStore.hydrate();
+		await baseTemplateStore.hydrate();
 		await settingsStore.hydrate();
 	});
 
@@ -38,7 +43,9 @@
 	function handleExport() {
 		const data = {
 			...collectionStore.exportCollection(),
-			rosters: $state.snapshot(rosterStore.rosters)
+			rosters: $state.snapshot(rosterStore.rosters),
+			campaigns: $state.snapshot(campaignStore.campaigns),
+			baseTemplates: $state.snapshot(baseTemplateStore.templates)
 		};
 		downloadCollection(data);
 		lastBackupDate = new Date().toISOString();
@@ -54,6 +61,51 @@
 		input.value = '';
 	}
 
+	let showTemplateModal = $state(false);
+	let editingTemplateId = $state<string | null>(null);
+	let tplType = $state('');
+	let tplName = $state('');
+	let tplNotes = $state('');
+	let tplInfluence = $state(0);
+	let tplGold = $state(0);
+	let tplValor = $state(0);
+	let tplErrors = $state<Record<string, string>>({});
+
+	function openTemplateModal(id: string | null): void {
+		const template = id ? baseTemplateStore.getTemplate(id) : undefined;
+		editingTemplateId = id;
+		tplType = template?.type ?? '';
+		tplName = template?.name ?? '';
+		tplNotes = template?.notes ?? '';
+		tplInfluence = template?.startingInfluence ?? 0;
+		tplGold = template?.startingGold ?? 0;
+		tplValor = template?.startingValor ?? 0;
+		tplErrors = {};
+		showTemplateModal = true;
+	}
+
+	async function saveTemplate(): Promise<void> {
+		const errors: Record<string, string> = {};
+		if (!tplType.trim()) errors.type = 'Base type is required';
+		if (!tplName.trim()) errors.name = 'Give this base a name';
+		tplErrors = errors;
+		if (Object.keys(errors).length > 0) return;
+		const input = {
+			type: tplType.trim(),
+			name: tplName.trim(),
+			notes: tplNotes.trim(),
+			startingInfluence: tplInfluence,
+			startingGold: tplGold,
+			startingValor: tplValor
+		};
+		if (editingTemplateId) {
+			await baseTemplateStore.update(editingTemplateId, input);
+		} else {
+			await baseTemplateStore.create(input);
+		}
+		showTemplateModal = false;
+	}
+
 	async function confirmImport() {
 		if (!importFile) return;
 		importing = true;
@@ -63,11 +115,18 @@
 			if (data.rosters?.length) {
 				await rosterStore.importRosters(data.rosters, importMode);
 			}
+			if (data.campaigns?.length) {
+				await campaignStore.importCampaigns(data.campaigns, importMode);
+			}
+			if (data.baseTemplates?.length) {
+				await baseTemplateStore.importTemplates(data.baseTemplates, importMode);
+			}
 			const rosterCount = data.rosters?.length ?? 0;
+			const campaignCount = data.campaigns?.length ?? 0;
 			toastStore.success(
 				importMode === 'replace'
 					? 'Backup replaced successfully'
-					: `Imported ${data.characters.length} characters, ${data.upgrades.length} upgrades, ${rosterCount} rosters`
+					: `Imported ${data.characters.length} characters, ${data.upgrades.length} upgrades, ${rosterCount} rosters, ${campaignCount} campaigns`
 			);
 		} catch (err) {
 			toastStore.error(err instanceof Error ? err.message : 'Import failed');
@@ -130,8 +189,41 @@
 			↓ Export backup
 		</Button>
 		<p class="mt-1 text-xs text-on-muted">
-			{collectionStore.characters.length} characters · {collectionStore.upgrades.length} upgrades · {rosterStore.rosters.length} rosters
+			{collectionStore.characters.length} characters · {collectionStore.upgrades.length} upgrades · {rosterStore.rosters.length} rosters · {campaignStore.campaigns.length} campaigns
 		</p>
+	</section>
+
+	<!-- Base Templates -->
+	<section class="mb-6">
+		<h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-on-muted">Base Templates</h2>
+		<p class="mb-3 text-sm text-on-muted">
+			Save your encampment base types (from your own book) to reuse across campaigns.
+		</p>
+		{#if baseTemplateStore.templates.length > 0}
+			<ul class="mb-3 space-y-2">
+				{#each baseTemplateStore.templates as template (template.id)}
+					<li class="card flex items-center justify-between gap-3">
+						<div class="min-w-0">
+							<p class="truncate text-sm font-medium">{template.name}</p>
+							<p class="truncate text-xs text-on-muted">{template.type}</p>
+						</div>
+						<div class="flex shrink-0 gap-3 text-sm">
+							<button type="button" onclick={() => openTemplateModal(template.id)} class="text-accent">
+								Edit
+							</button>
+							<button
+								type="button"
+								onclick={() => (confirmDeleteTemplateId = template.id)}
+								class="text-on-muted hover:text-on-surface"
+							>
+								Delete
+							</button>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		{/if}
+		<Button variant="ghost" onclick={() => openTemplateModal(null)}>+ New base template</Button>
 	</section>
 
 	<!-- Import -->
@@ -201,6 +293,110 @@
 		<Button variant="ghost" onclick={() => (showImportModal = false)}>Cancel</Button>
 		<Button variant="primary" onclick={confirmImport} disabled={importing}>
 			{importing ? 'Importing…' : 'Import'}
+		</Button>
+	{/snippet}
+</Modal>
+
+<!-- Base template create/edit modal -->
+<Modal
+	open={showTemplateModal}
+	title={editingTemplateId ? 'Edit base template' : 'New base template'}
+	onclose={() => (showTemplateModal = false)}
+>
+	{#snippet children()}
+		<div class="space-y-4">
+			<div>
+				<label class="mb-1 block text-sm" for="tplType">Base type *</label>
+				<input
+					id="tplType"
+					type="text"
+					bind:value={tplType}
+					placeholder="As printed in your Seeker's Handbook"
+					class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+				/>
+				{#if tplErrors.type}<p class="mt-1 text-xs text-red-400">{tplErrors.type}</p>{/if}
+			</div>
+			<div>
+				<label class="mb-1 block text-sm" for="tplName">Base name *</label>
+				<input
+					id="tplName"
+					type="text"
+					bind:value={tplName}
+					placeholder="Your own name for this base"
+					class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+				/>
+				{#if tplErrors.name}<p class="mt-1 text-xs text-red-400">{tplErrors.name}</p>{/if}
+			</div>
+			<div class="grid grid-cols-3 gap-3">
+				<div>
+					<label class="mb-1 block text-sm" for="tplInfluence">Starting Influence</label>
+					<input
+						id="tplInfluence"
+						type="number"
+						min="0"
+						bind:value={tplInfluence}
+						class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+					/>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm" for="tplGold">Starting Gold</label>
+					<input
+						id="tplGold"
+						type="number"
+						min="0"
+						bind:value={tplGold}
+						class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+					/>
+				</div>
+				<div>
+					<label class="mb-1 block text-sm" for="tplValor">Starting Valor</label>
+					<input
+						id="tplValor"
+						type="number"
+						min="0"
+						bind:value={tplValor}
+						class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+					/>
+				</div>
+			</div>
+			<div>
+				<label class="mb-1 block text-sm" for="tplNotes">Permanent boon / notes</label>
+				<textarea
+					id="tplNotes"
+					bind:value={tplNotes}
+					rows="3"
+					placeholder="Permanent boon granted by this base"
+					class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+				></textarea>
+			</div>
+		</div>
+	{/snippet}
+	{#snippet actions()}
+		<Button variant="ghost" onclick={() => (showTemplateModal = false)}>Cancel</Button>
+		<Button variant="primary" onclick={saveTemplate}>Save</Button>
+	{/snippet}
+</Modal>
+
+<!-- Base template delete confirm -->
+<Modal
+	open={confirmDeleteTemplateId !== null}
+	title="Delete base template?"
+	onclose={() => (confirmDeleteTemplateId = null)}
+>
+	{#snippet children()}
+		<p class="text-on-muted">This cannot be undone.</p>
+	{/snippet}
+	{#snippet actions()}
+		<Button variant="ghost" onclick={() => (confirmDeleteTemplateId = null)}>Cancel</Button>
+		<Button
+			variant="danger"
+			onclick={async () => {
+				if (!confirmDeleteTemplateId) return;
+				await baseTemplateStore.deleteTemplate(confirmDeleteTemplateId);
+				confirmDeleteTemplateId = null;
+			}}
+		>
+			Delete
 		</Button>
 	{/snippet}
 </Modal>
