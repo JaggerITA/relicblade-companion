@@ -4,6 +4,7 @@
 	import Button from '$lib/components/shared/Button.svelte';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { gameStore } from '$lib/stores/gameStore.svelte.js';
+	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 
 	let roster1Id = $state('');
@@ -12,6 +13,7 @@
 
 	$effect(() => {
 		rosterStore.hydrate();
+		collectionStore.hydrate();
 	});
 
 	const eligibleRosters = $derived(rosterStore.rosters.filter((r) => r.entries.length > 0));
@@ -28,6 +30,7 @@
 		if (!roster1 || !roster2 || error) return;
 		starting = true;
 		try {
+			await collectionStore.hydrate();
 			const game = await gameStore.start(roster1, roster2);
 			toastStore.success('Game started');
 			goto(`${base}/game/${game.id}`);
