@@ -8,9 +8,11 @@
 		characters: Character[];
 		onpick: (characterId: string) => void;
 		onclose: () => void;
+		title?: string;
+		actionLabel?: string;
 	}
 
-	let { open, characters, onpick, onclose }: Props = $props();
+	let { open, characters, onpick, onclose, title = 'Add character', actionLabel = '+ Add to roster' }: Props = $props();
 
 	let search = $state('');
 	let expandedId = $state<string | null>(null);
@@ -39,7 +41,7 @@
 	}
 </script>
 
-<Modal open={open} title="Add character" onclose={close}>
+<Modal open={open} title={title} onclose={close}>
 	{#snippet children()}
 		<input
 			type="search"
@@ -84,7 +86,7 @@
 									onclick={() => pick(char.id)}
 									class="btn-primary mt-3 w-full text-sm"
 								>
-									+ Add to roster
+									{actionLabel}
 								</button>
 							</div>
 						{/if}

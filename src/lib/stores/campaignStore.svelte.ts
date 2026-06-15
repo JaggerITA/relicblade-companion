@@ -1,6 +1,19 @@
 import { dbDelete, dbGetAll, dbPut } from '$lib/utils/db.js';
 import { newId } from '$lib/utils/id.js';
-import type { Campaign, CampaignBase, PathAlignment } from '$lib/models/Campaign.js';
+import type {
+	Campaign,
+	CampaignBase,
+	CharacterCampaignState,
+	PathAlignment,
+	SpecialistLevel,
+	SpecialistType
+} from '$lib/models/Campaign.js';
+
+const nextSpecialistLevel: Record<SpecialistLevel, SpecialistLevel | null> = {
+	novice: 'journeyman',
+	journeyman: 'master',
+	master: null
+};
 
 function createCampaignStore() {
 	let campaigns = $state<Campaign[]>([]);
@@ -83,6 +96,76 @@ function createCampaignStore() {
 		await persist({ ...campaign, gold: Math.max(0, campaign.gold + delta) });
 	}
 
+	async function recruitAdventurer(
+		id: string,
+		characterId: string,
+		currentHealth: number,
+		influenceCost: number
+	): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		const state: CharacterCampaignState = {
+			characterId,
+			heroicTraits: [],
+			woundTraits: [],
+			criticalWounds: 0,
+			currentHealth,
+			relics: [],
+			gold: 0,
+			valor: 0
+		};
+		await persist({
+			...campaign,
+			characterStates: [...campaign.characterStates, state],
+			influence: Math.max(0, campaign.influence - influenceCost)
+		});
+	}
+
+	async function removeAdventurer(id: string, characterId: string): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		await persist({
+			...campaign,
+			characterStates: campaign.characterStates.filter((s) => s.characterId !== characterId)
+		});
+	}
+
+	async function recruitSpecialist(id: string, type: SpecialistType, influenceCost: number): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		if (campaign.specialists.some((s) => s.type === type)) return;
+		await persist({
+			...campaign,
+			specialists: [...campaign.specialists, { type, level: 'novice', influencePaid: influenceCost }],
+			influence: Math.max(0, campaign.influence - influenceCost)
+		});
+	}
+
+	async function advanceSpecialist(id: string, type: SpecialistType, influenceCost: number): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		const specialist = campaign.specialists.find((s) => s.type === type);
+		if (!specialist) return;
+		const next = nextSpecialistLevel[specialist.level];
+		if (!next) return;
+		await persist({
+			...campaign,
+			specialists: campaign.specialists.map((s) =>
+				s.type === type ? { ...s, level: next, influencePaid: s.influencePaid + influenceCost } : s
+			),
+			influence: Math.max(0, campaign.influence - influenceCost)
+		});
+	}
+
+	async function removeSpecialist(id: string, type: SpecialistType): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		await persist({
+			...campaign,
+			specialists: campaign.specialists.filter((s) => s.type !== type)
+		});
+	}
+
 	async function deleteCampaign(id: string): Promise<void> {
 		await dbDelete('campaigns', id);
 		campaigns = campaigns.filter((c) => c.id !== id);
@@ -112,6 +195,11 @@ function createCampaignStore() {
 		setBase,
 		adjustInfluence,
 		adjustGold,
+		recruitAdventurer,
+		removeAdventurer,
+		recruitSpecialist,
+		advanceSpecialist,
+		removeSpecialist,
 		deleteCampaign,
 		importCampaigns
 	};

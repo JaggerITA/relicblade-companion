@@ -4,11 +4,15 @@
 	import { base } from '$app/paths';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
+	import CharacterPickerSheet from '$lib/components/listbuilder/CharacterPickerSheet.svelte';
 	import { baseTemplateStore } from '$lib/stores/baseTemplateStore.svelte.js';
 	import { campaignStore } from '$lib/stores/campaignStore.svelte.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
+	import type { SpecialistType } from '$lib/models/Campaign.js';
+
+	const specialistTypes: SpecialistType[] = ['smith', 'scribe', 'chemist', 'artisan'];
 
 	const id = $derived($page.params.id ?? '');
 	const campaign = $derived(campaignStore.getCampaign(id));
@@ -24,6 +28,24 @@
 	let baseStartingGold = $state(0);
 	let baseStartingValor = $state(0);
 	let baseErrors = $state<Record<string, string>>({});
+
+	let showSpecialistCostModal = $state(false);
+	let specialistModalType = $state<SpecialistType | null>(null);
+	let specialistModalAction = $state<'recruit' | 'advance'>('recruit');
+	let specialistCostInput = $state(0);
+	let confirmRemoveSpecialistType = $state<SpecialistType | null>(null);
+
+	let showAdventurerPicker = $state(false);
+	let confirmRemoveAdventurerId = $state<string | null>(null);
+
+	const availableAdventurers = $derived.by(() => {
+		if (!campaign) return [];
+		return collectionStore.characters.filter(
+			(c) =>
+				!campaign.characterStates.some((s) => s.characterId === c.id) &&
+				(c.path === 'neutral' || c.path === campaign.pathAlignment)
+		);
+	});
 
 	$effect(() => {
 		campaignStore.hydrate();
@@ -95,6 +117,31 @@
 			if (baseStartingGold) await campaignStore.adjustGold(campaign.id, baseStartingGold);
 		}
 		showBaseModal = false;
+	}
+
+	function openSpecialistModal(type: SpecialistType, action: 'recruit' | 'advance'): void {
+		specialistModalType = type;
+		specialistModalAction = action;
+		specialistCostInput = 0;
+		showSpecialistCostModal = true;
+	}
+
+	async function confirmSpecialistAction(): Promise<void> {
+		if (!campaign || !specialistModalType) return;
+		if (specialistModalAction === 'recruit') {
+			await campaignStore.recruitSpecialist(campaign.id, specialistModalType, specialistCostInput);
+		} else {
+			await campaignStore.advanceSpecialist(campaign.id, specialistModalType, specialistCostInput);
+		}
+		showSpecialistCostModal = false;
+	}
+
+	async function pickAdventurer(characterId: string): Promise<void> {
+		if (!campaign) return;
+		const character = collectionStore.getCharacter(characterId);
+		if (!character) return;
+		await campaignStore.recruitAdventurer(campaign.id, characterId, character.stats.health, character.cost);
+		showAdventurerPicker = false;
 	}
 </script>
 
@@ -192,18 +239,41 @@
 			<!-- Followers -->
 			<section class="mb-4">
 				<h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-muted">Followers</h2>
-				{#if campaign.specialists.length === 0}
-					<!-- TODO Sprint 7 (#16): recruit Adventurer & Specialist followers -->
-					<p class="text-sm text-on-muted">No specialists recruited yet.</p>
-				{:else}
-					<ul class="space-y-1">
-						{#each campaign.specialists as specialist, i (i)}
-							<li class="card text-sm capitalize">
-								{specialist.level} {specialist.type}
-							</li>
-						{/each}
-					</ul>
-				{/if}
+				<ul class="space-y-2">
+					{#each specialistTypes as type (type)}
+						{@const specialist = campaign.specialists.find((s) => s.type === type)}
+						<li class="card flex items-center justify-between gap-3">
+							<div class="min-w-0">
+								<p class="truncate text-sm font-medium capitalize">{type}</p>
+								{#if specialist}
+									<p class="text-xs capitalize text-on-muted">{specialist.level}</p>
+								{:else}
+									<p class="text-xs text-on-muted">Not recruited</p>
+								{/if}
+							</div>
+							<div class="flex shrink-0 gap-3 text-sm">
+								{#if !specialist}
+									<button type="button" onclick={() => openSpecialistModal(type, 'recruit')} class="text-accent">
+										Recruit
+									</button>
+								{:else}
+									{#if specialist.level !== 'master'}
+										<button type="button" onclick={() => openSpecialistModal(type, 'advance')} class="text-accent">
+											Advance
+										</button>
+									{/if}
+									<button
+										type="button"
+										onclick={() => (confirmRemoveSpecialistType = type)}
+										class="text-on-muted hover:text-on-surface"
+									>
+										Remove
+									</button>
+								{/if}
+							</div>
+						</li>
+					{/each}
+				</ul>
 			</section>
 
 			<!-- Roster / character progression -->
@@ -220,9 +290,35 @@
 				{:else}
 					<p class="text-sm text-on-muted">Starting roster not found.</p>
 				{/if}
+
+				<div class="mb-2 mt-3 flex items-center justify-between">
+					<h3 class="text-xs font-semibold uppercase tracking-wider text-on-muted">Adventurers</h3>
+					<button type="button" onclick={() => (showAdventurerPicker = true)} class="text-sm text-accent">
+						+ Recruit
+					</button>
+				</div>
 				{#if campaign.characterStates.length === 0}
 					<!-- TODO Sprint 7 (#17): Heroic Traits, wounds, recovery, relics, valor per character -->
-					<p class="mt-2 text-sm text-on-muted">No character progression recorded yet.</p>
+					<p class="text-sm text-on-muted">No adventurers recruited yet.</p>
+				{:else}
+					<ul class="space-y-1">
+						{#each campaign.characterStates as state (state.characterId)}
+							{@const character = collectionStore.getCharacter(state.characterId)}
+							<li class="card flex items-center justify-between gap-3">
+								<div class="min-w-0">
+									<p class="truncate text-sm font-medium">{character?.name ?? 'Unknown character'}</p>
+									<p class="text-xs text-on-muted">Valor {state.valor}</p>
+								</div>
+								<button
+									type="button"
+									onclick={() => (confirmRemoveAdventurerId = state.characterId)}
+									class="shrink-0 text-sm text-on-muted hover:text-on-surface"
+								>
+									Remove
+								</button>
+							</li>
+						{/each}
+					</ul>
 				{/if}
 			</section>
 
@@ -364,6 +460,89 @@
 				<Button variant="ghost" onclick={() => (showBaseModal = false)}>Cancel</Button>
 				<Button variant="primary" onclick={saveBase}>Save</Button>
 			{/if}
+		{/snippet}
+	</Modal>
+
+	<Modal
+		open={showSpecialistCostModal}
+		title={specialistModalAction === 'recruit' ? 'Recruit specialist' : 'Advance specialist'}
+		onclose={() => (showSpecialistCostModal = false)}
+	>
+		{#snippet children()}
+			<p class="mb-3 text-sm text-on-muted">
+				Enter the Influence cost from your book{#if specialistModalAction === 'advance'} for the next level{/if}.
+			</p>
+			<label class="mb-1 block text-sm" for="specialistCost">Influence cost</label>
+			<input
+				id="specialistCost"
+				type="number"
+				min="0"
+				bind:value={specialistCostInput}
+				class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+			/>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="ghost" onclick={() => (showSpecialistCostModal = false)}>Cancel</Button>
+			<Button variant="primary" onclick={confirmSpecialistAction}>
+				{specialistModalAction === 'recruit' ? 'Recruit' : 'Advance'}
+			</Button>
+		{/snippet}
+	</Modal>
+
+	<Modal
+		open={confirmRemoveSpecialistType !== null}
+		title="Remove specialist?"
+		onclose={() => (confirmRemoveSpecialistType = null)}
+	>
+		{#snippet children()}
+			<p class="text-on-muted">This cannot be undone.</p>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="ghost" onclick={() => (confirmRemoveSpecialistType = null)}>Cancel</Button>
+			<Button
+				variant="danger"
+				onclick={async () => {
+					if (!campaign || !confirmRemoveSpecialistType) return;
+					await campaignStore.removeSpecialist(campaign.id, confirmRemoveSpecialistType);
+					confirmRemoveSpecialistType = null;
+				}}
+			>
+				Remove
+			</Button>
+		{/snippet}
+	</Modal>
+
+	<CharacterPickerSheet
+		open={showAdventurerPicker}
+		characters={availableAdventurers}
+		onpick={pickAdventurer}
+		onclose={() => (showAdventurerPicker = false)}
+		title="Recruit adventurer"
+		actionLabel="+ Recruit"
+	/>
+
+	<Modal
+		open={confirmRemoveAdventurerId !== null}
+		title="Remove adventurer?"
+		onclose={() => (confirmRemoveAdventurerId = null)}
+	>
+		{#snippet children()}
+			<p class="text-on-muted">
+				This cannot be undone. Their progression (heroic traits, wounds, relics) will be lost.
+			</p>
+		{/snippet}
+		{#snippet actions()}
+			<Button variant="ghost" onclick={() => (confirmRemoveAdventurerId = null)}>Cancel</Button>
+			<Button
+				variant="danger"
+				onclick={async () => {
+					if (!campaign || !confirmRemoveAdventurerId) return;
+					await campaignStore.removeAdventurer(campaign.id, confirmRemoveAdventurerId);
+					confirmRemoveAdventurerId = null;
+				}}
+			>
+				Remove
+			</Button>
 		{/snippet}
 	</Modal>
 

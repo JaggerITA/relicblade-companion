@@ -141,6 +141,95 @@ describe('campaignStore', () => {
 		});
 	});
 
+	describe('recruitAdventurer / removeAdventurer', () => {
+		it('adds a character state and deducts influence', async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+			await campaignStore.adjustInfluence('campaign-1', 50);
+
+			await campaignStore.recruitAdventurer('campaign-1', 'char-1', 10, 15);
+
+			const campaign = campaignStore.getCampaign('campaign-1');
+			expect(campaign?.influence).toBe(35);
+			expect(campaign?.characterStates).toEqual([
+				{
+					characterId: 'char-1',
+					heroicTraits: [],
+					woundTraits: [],
+					criticalWounds: 0,
+					currentHealth: 10,
+					relics: [],
+					gold: 0,
+					valor: 0
+				}
+			]);
+
+			await campaignStore.removeAdventurer('campaign-1', 'char-1');
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates).toEqual([]);
+		});
+
+		it('clamps influence at 0 when the cost exceeds the pool', async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+
+			await campaignStore.recruitAdventurer('campaign-1', 'char-1', 10, 15);
+
+			expect(campaignStore.getCampaign('campaign-1')?.influence).toBe(0);
+		});
+	});
+
+	describe('recruitSpecialist / advanceSpecialist / removeSpecialist', () => {
+		it('recruits a specialist at novice level and deducts influence', async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+			await campaignStore.adjustInfluence('campaign-1', 50);
+
+			await campaignStore.recruitSpecialist('campaign-1', 'smith', 10);
+
+			const campaign = campaignStore.getCampaign('campaign-1');
+			expect(campaign?.influence).toBe(40);
+			expect(campaign?.specialists).toEqual([{ type: 'smith', level: 'novice', influencePaid: 10 }]);
+		});
+
+		it('does not recruit a second specialist of the same type', async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+			await campaignStore.recruitSpecialist('campaign-1', 'smith', 10);
+
+			await campaignStore.recruitSpecialist('campaign-1', 'smith', 20);
+
+			expect(campaignStore.getCampaign('campaign-1')?.specialists).toHaveLength(1);
+		});
+
+		it('advances a specialist through levels and tracks influence paid', async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+			await campaignStore.adjustInfluence('campaign-1', 50);
+			await campaignStore.recruitSpecialist('campaign-1', 'smith', 10);
+
+			await campaignStore.advanceSpecialist('campaign-1', 'smith', 15);
+
+			let specialist = campaignStore.getCampaign('campaign-1')?.specialists[0];
+			expect(specialist?.level).toBe('journeyman');
+			expect(specialist?.influencePaid).toBe(25);
+
+			await campaignStore.advanceSpecialist('campaign-1', 'smith', 20);
+			specialist = campaignStore.getCampaign('campaign-1')?.specialists[0];
+			expect(specialist?.level).toBe('master');
+			expect(specialist?.influencePaid).toBe(45);
+
+			// Already at master — no further advancement
+			await campaignStore.advanceSpecialist('campaign-1', 'smith', 5);
+			specialist = campaignStore.getCampaign('campaign-1')?.specialists[0];
+			expect(specialist?.level).toBe('master');
+			expect(specialist?.influencePaid).toBe(45);
+		});
+
+		it('removes a specialist', async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+			await campaignStore.recruitSpecialist('campaign-1', 'smith', 10);
+
+			await campaignStore.removeSpecialist('campaign-1', 'smith');
+
+			expect(campaignStore.getCampaign('campaign-1')?.specialists).toEqual([]);
+		});
+	});
+
 	describe('deleteCampaign', () => {
 		it('removes the campaign from state and db', async () => {
 			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
