@@ -14,9 +14,19 @@ vi.mock('./collectionStore.svelte.js', () => ({
 	collectionStore: { getCharacter: vi.fn() }
 }));
 
+vi.mock('./rosterStore.svelte.js', () => ({
+	rosterStore: {
+		getRoster: vi.fn(),
+		configureForCampaign: vi.fn(),
+		setMaxInfluence: vi.fn(),
+		removeEntry: vi.fn()
+	}
+}));
+
 import { dbDelete, dbGetAll, dbPut } from '$lib/utils/db.js';
 import { newId } from '$lib/utils/id.js';
 import { collectionStore } from './collectionStore.svelte.js';
+import { rosterStore } from './rosterStore.svelte.js';
 import { campaignStore } from './campaignStore.svelte.js';
 import { gameStore } from './gameStore.svelte.js';
 import type { Character } from '$lib/models/Character.js';
@@ -122,10 +132,11 @@ describe('gameStore', () => {
 
 		it('carries over currentHealth and seeds actionDiceModifier from criticalWounds for a campaign game', async () => {
 			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 6 } }));
-			const campaign = await campaignStore.create('Test Campaign', 'roster-1', 'advocate');
-			await campaignStore.recruitAdventurer(campaign.id, 'knight', 6, 0);
-			await campaignStore.setCurrentHealth(campaign.id, 'knight', 3);
-			await campaignStore.adjustCriticalWounds(campaign.id, 'knight', 2);
+			// The linked roster seeds the campaign state via syncWarband (keyed by entryId).
+			vi.mocked(rosterStore.getRoster).mockReturnValue(makeRoster([{ characterId: 'knight' }]));
+			const campaign = await campaignStore.create('Test Campaign', 'roster-1', 'advocate', 50);
+			await campaignStore.setCurrentHealth(campaign.id, 'entry-0', 3);
+			await campaignStore.adjustCriticalWounds(campaign.id, 'entry-0', 2);
 
 			const game = await gameStore.start(
 				makeRoster([{ characterId: 'knight' }]),
@@ -135,6 +146,23 @@ describe('gameStore', () => {
 			);
 
 			expect(game.models[0]).toMatchObject({ currentHealth: 3, maxHealth: 6, actionDiceModifier: -2 });
+		});
+
+		it('records threat level, scenario, and environment for a campaign game', async () => {
+			registerCharacter(makeCharacter({ id: 'knight' }));
+			const campaign = await campaignStore.create('Test Campaign', 'roster-1', 'advocate');
+
+			const game = await gameStore.start(
+				makeRoster([{ characterId: 'knight' }]),
+				makeRoster([]),
+				true,
+				campaign.id,
+				{ threatLevel: 3, scenarioId: 'scenario-1', environmentId: 'environment-1' }
+			);
+
+			expect(game.threatLevel).toBe(3);
+			expect(game.scenarioId).toBe('scenario-1');
+			expect(game.environmentId).toBe('environment-1');
 		});
 	});
 

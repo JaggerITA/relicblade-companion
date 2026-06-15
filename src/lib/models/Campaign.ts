@@ -40,8 +40,51 @@ export interface BaseTemplate {
 	updatedAt: string;
 }
 
+export type ScenarioType = 'core' | 'uncharted-setup' | 'uncharted-objective';
+
+/**
+ * A scenario transcribed by the player from their own book, for use in the campaign
+ * game wizard (#19). All fields are user-entered (Zero Game Data).
+ */
+export interface Scenario {
+	id: string;
+	name: string;
+	type: ScenarioType;
+	players: string;
+	setup: string;
+	specialRules: string;
+	victoryConditions: string;
+	rewards: string;
+	optionalRules: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+/**
+ * An environment (table dressing + danger chart) transcribed by the player from their
+ * own book, for use in the campaign game wizard (#19). All fields are user-entered
+ * (Zero Game Data).
+ */
+export interface Environment {
+	id: string;
+	name: string;
+	notes: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+/**
+ * Persistent campaign progression for one warband member. Keyed by `entryId` (the roster-entry
+ * instance) so multiple copies of the same character archetype each track their own progression
+ * — "other copies of the same archetype do NOT share" (Seeker's Handbook / Campaign-App-Mapping).
+ */
 export interface CharacterCampaignState {
+	/** Roster-entry instance id — the primary key tying this state to a specific warband member. */
+	entryId: string;
+	/** Character archetype id (for display/lookup; not unique when copies exist). */
 	characterId: string;
+	/** `dead` members are retained for history but removed from the active warband roster. */
+	status: 'active' | 'dead';
 	heroicTraits: string[];
 	woundTraits: string[];
 	/** Each point = -1 AD applied by computeEffectiveStats (ADR-007) */
@@ -51,7 +94,28 @@ export interface CharacterCampaignState {
 	gold: number;
 	/** Experience-based resource earned per character (Seeker's Handbook p.51) */
 	valor: number;
+	/** Career totals accumulated across adventures via the guided postgame. */
+	kills: number;
+	objectives: number;
+	gamesPlayed: number;
 	recoveryRoll?: number;
+}
+
+/** Per-character result of a single adventure, recorded by the guided postgame; feeds the timeline. */
+export interface MatchCharacterOutcome {
+	entryId: string;
+	characterId: string;
+	result: 'survived' | 'disabled' | 'destroyed';
+	kills: number;
+	objectives: number;
+	valorGained: number;
+	/** Health boxes carried into the next adventure (after recovery), if changed. */
+	currentHealth?: number;
+	/** Outcome of the injury chart roll for destroyed members (table results are user-entered). */
+	injuryOutcome?: 'none' | 'wound' | 'critical' | 'death';
+	woundTraitAdded?: string;
+	heroicTraitAdded?: string;
+	relicAdded?: string;
 }
 
 export interface MatchRecord {
@@ -59,8 +123,16 @@ export interface MatchRecord {
 	date: string;
 	result: 'win' | 'loss' | 'draw';
 	scenario?: string;
+	scenarioId?: string;
+	environmentId?: string;
+	threatLevel?: number;
+	influenceEarned: number;
+	goldEarned: number;
 	notes: string;
-	characterStates: CharacterCampaignState[];
+	/** Per-character outcomes (timeline source). */
+	outcomes: MatchCharacterOutcome[];
+	/** Optional end-of-game snapshot of each member's state. */
+	characterStates?: CharacterCampaignState[];
 }
 
 export interface Campaign {

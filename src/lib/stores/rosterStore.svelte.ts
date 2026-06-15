@@ -90,6 +90,24 @@ function createRosterStore() {
 		rosters = rosters.filter((r) => r.id !== id);
 	}
 
+	/** Links a roster to a campaign: threat mode (characters only), budget as limit, campaign tag. */
+	async function configureForCampaign(
+		rosterId: string,
+		maxInfluence: number,
+		campaignId: string
+	): Promise<void> {
+		const roster = getRoster(rosterId);
+		if (!roster) return;
+		await persist({ ...roster, limitMode: 'threat', maxInfluence, campaignId });
+	}
+
+	/** Mirrors the campaign influence budget onto the linked roster's limit. */
+	async function setMaxInfluence(rosterId: string, maxInfluence: number): Promise<void> {
+		const roster = getRoster(rosterId);
+		if (!roster) return;
+		await persist({ ...roster, maxInfluence });
+	}
+
 	async function addEntry(rosterId: string, characterId: string): Promise<void> {
 		const roster = getRoster(rosterId);
 		if (!roster) return;
@@ -145,6 +163,8 @@ function createRosterStore() {
 		getRoster,
 		create,
 		deleteRoster,
+		configureForCampaign,
+		setMaxInfluence,
 		addEntry,
 		removeEntry,
 		equipUpgrade,

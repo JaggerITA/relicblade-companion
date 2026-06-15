@@ -6,7 +6,9 @@
 	import { baseTemplateStore } from '$lib/stores/baseTemplateStore.svelte.js';
 	import { campaignStore } from '$lib/stores/campaignStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { environmentStore } from '$lib/stores/environmentStore.svelte.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
+	import { scenarioStore } from '$lib/stores/scenarioStore.svelte.js';
 	import { settingsStore } from '$lib/stores/settingsStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 	import { downloadCollection, readCollectionFile, daysSinceBackup } from '$lib/utils/exportImport.js';
@@ -25,6 +27,8 @@
 		await rosterStore.hydrate();
 		await campaignStore.hydrate();
 		await baseTemplateStore.hydrate();
+		await scenarioStore.hydrate();
+		await environmentStore.hydrate();
 		await settingsStore.hydrate();
 	});
 
@@ -45,7 +49,9 @@
 			...collectionStore.exportCollection(),
 			rosters: $state.snapshot(rosterStore.rosters),
 			campaigns: $state.snapshot(campaignStore.campaigns),
-			baseTemplates: $state.snapshot(baseTemplateStore.templates)
+			baseTemplates: $state.snapshot(baseTemplateStore.templates),
+			scenarios: $state.snapshot(scenarioStore.scenarios),
+			environments: $state.snapshot(environmentStore.environments)
 		};
 		downloadCollection(data);
 		lastBackupDate = new Date().toISOString();
@@ -120,6 +126,12 @@
 			}
 			if (data.baseTemplates?.length) {
 				await baseTemplateStore.importTemplates(data.baseTemplates, importMode);
+			}
+			if (data.scenarios?.length) {
+				await scenarioStore.importScenarios(data.scenarios, importMode);
+			}
+			if (data.environments?.length) {
+				await environmentStore.importEnvironments(data.environments, importMode);
 			}
 			const rosterCount = data.rosters?.length ?? 0;
 			const campaignCount = data.campaigns?.length ?? 0;

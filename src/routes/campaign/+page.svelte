@@ -35,7 +35,10 @@
 	<header class="sticky top-0 z-10 bg-surface px-4 pb-2 pt-4">
 		<div class="flex items-center justify-between">
 			<h1 class="text-xl font-bold">Campaigns</h1>
-			<a href="{base}/settings" class="text-on-muted hover:text-on-surface" aria-label="Settings">⚙</a>
+			<div class="flex items-center gap-3">
+				<a href="{base}/campaign/scenarios" class="text-on-muted hover:text-on-surface" aria-label="Scenarios & environments">🗺</a>
+				<a href="{base}/settings" class="text-on-muted hover:text-on-surface" aria-label="Settings">⚙</a>
+			</div>
 		</div>
 	</header>
 

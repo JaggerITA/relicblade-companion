@@ -29,4 +29,10 @@ export interface GameState {
 	startedAt: string;
 	isCampaignGame: boolean;
 	campaignId?: string;
+	/** Recorded by the campaign game wizard (#19) — user-set, the app does not enforce it. */
+	threatLevel?: number;
+	/** Recorded by the campaign game wizard (#19) — refs Scenario in the user's scenario library. */
+	scenarioId?: string;
+	/** Recorded by the campaign game wizard (#19) — refs Environment in the user's scenario library. */
+	environmentId?: string;
 }

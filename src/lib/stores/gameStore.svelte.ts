@@ -67,7 +67,8 @@ function createGameStore() {
 			if (!character) continue;
 			// Constructs enter play inert — fuel cells start empty (Game Rules #type/construct)
 			const isConstruct = hasKeyword(character, 'Construct');
-			const campaignState = characterStates?.find((s) => s.characterId === character.id);
+			// Match per-instance (entryId), so duplicate copies of one archetype carry over independently.
+			const campaignState = characterStates?.find((s) => s.entryId === entry.entryId);
 			states.push({
 				entryId: entry.entryId,
 				characterId: character.id,
@@ -90,7 +91,8 @@ function createGameStore() {
 		roster1: Roster,
 		roster2: Roster,
 		isCampaignGame = false,
-		campaignId?: string
+		campaignId?: string,
+		campaignDetails?: { threatLevel?: number; scenarioId?: string; environmentId?: string }
 	): Promise<GameState> {
 		const characterStates = isCampaignGame && campaignId
 			? campaignStore.getCampaign(campaignId)?.characterStates
@@ -108,7 +110,8 @@ function createGameStore() {
 			],
 			startedAt: new Date().toISOString(),
 			isCampaignGame,
-			campaignId
+			campaignId,
+			...campaignDetails
 		}) as GameState;
 		await dbPut('games', game);
 		games = [...games, game];

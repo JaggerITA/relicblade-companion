@@ -8,6 +8,8 @@
 	import InitiativeRoller from '$lib/components/gamemanager/InitiativeRoller.svelte';
 	import { gameStore } from '$lib/stores/gameStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
+	import { environmentStore } from '$lib/stores/environmentStore.svelte.js';
+	import { scenarioStore } from '$lib/stores/scenarioStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
 	import type { ModelState } from '$lib/models/GameState.js';
 
@@ -23,7 +25,16 @@
 	$effect(() => {
 		gameStore.hydrate();
 		collectionStore.hydrate();
+		scenarioStore.hydrate();
+		environmentStore.hydrate();
 	});
+
+	const campaignScenario = $derived(
+		game?.scenarioId ? scenarioStore.getScenario(game.scenarioId) : undefined
+	);
+	const campaignEnvironment = $derived(
+		game?.environmentId ? environmentStore.getEnvironment(game.environmentId) : undefined
+	);
 
 
 	$effect(() => {
@@ -86,6 +97,25 @@
 					⚙
 				</button>
 			</div>
+
+			{#if game.isCampaignGame && (campaignScenario || campaignEnvironment || game.threatLevel)}
+				<p class="px-4 pb-2 text-xs text-on-muted">
+					{#if game.threatLevel}Threat {game.threatLevel}{/if}
+					{#if campaignScenario} · {campaignScenario.name}{/if}
+					{#if campaignEnvironment} · {campaignEnvironment.name}{/if}
+				</p>
+			{/if}
+
+			{#if game.isCampaignGame && game.campaignId}
+				<div class="px-4 pb-2">
+					<a
+						href="{base}/campaign/{game.campaignId}/postgame/{game.id}"
+						class="block w-full rounded-lg bg-purple-600 py-2 text-center text-sm font-medium text-white hover:bg-purple-500"
+					>
+						🏁 Resolve postgame
+					</a>
+				</div>
+			{/if}
 
 			<div class="flex items-center justify-between border-b border-white/10 px-4 py-2 text-sm">
 				<div class="flex items-center gap-2">

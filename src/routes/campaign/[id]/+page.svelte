@@ -2,14 +2,15 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { base } from '$app/paths';
+	import { onMount } from 'svelte';
 	import Modal from '$lib/components/shared/Modal.svelte';
 	import Button from '$lib/components/shared/Button.svelte';
-	import CharacterPickerSheet from '$lib/components/listbuilder/CharacterPickerSheet.svelte';
 	import { baseTemplateStore } from '$lib/stores/baseTemplateStore.svelte.js';
 	import { campaignStore } from '$lib/stores/campaignStore.svelte.js';
 	import { rosterStore } from '$lib/stores/rosterStore.svelte.js';
 	import { collectionStore } from '$lib/stores/collectionStore.svelte.js';
 	import { toastStore } from '$lib/stores/toastStore.svelte.js';
+	import { charactersInfluence } from '$lib/utils/validation.js';
 	import type { SpecialistType } from '$lib/models/Campaign.js';
 
 	const specialistTypes: SpecialistType[] = ['smith', 'scribe', 'chemist', 'artisan'];
@@ -35,61 +36,72 @@
 	let specialistCostInput = $state(0);
 	let confirmRemoveSpecialistType = $state<SpecialistType | null>(null);
 
-	let showAdventurerPicker = $state(false);
-	let confirmRemoveAdventurerId = $state<string | null>(null);
-	let expandedAdventurerId = $state<string | null>(null);
+	let expandedEntryId = $state<string | null>(null);
 	let newHeroicTrait = $state<Record<string, string>>({});
 	let newWoundTrait = $state<Record<string, string>>({});
 	let newRelic = $state<Record<string, string>>({});
 
-	function toggleAdventurer(characterId: string): void {
-		expandedAdventurerId = expandedAdventurerId === characterId ? null : characterId;
-	}
-
-	async function submitHeroicTrait(characterId: string): Promise<void> {
-		if (!campaign) return;
-		const trait = (newHeroicTrait[characterId] ?? '').trim();
-		if (!trait) return;
-		await campaignStore.addHeroicTrait(campaign.id, characterId, trait);
-		newHeroicTrait[characterId] = '';
-	}
-
-	async function submitWoundTrait(characterId: string): Promise<void> {
-		if (!campaign) return;
-		const trait = (newWoundTrait[characterId] ?? '').trim();
-		if (!trait) return;
-		await campaignStore.addWoundTrait(campaign.id, characterId, trait);
-		newWoundTrait[characterId] = '';
-	}
-
-	async function submitRelic(characterId: string): Promise<void> {
-		if (!campaign) return;
-		const relic = (newRelic[characterId] ?? '').trim();
-		if (!relic) return;
-		await campaignStore.addRelic(campaign.id, characterId, relic);
-		newRelic[characterId] = '';
-	}
-
-	const availableAdventurers = $derived.by(() => {
-		if (!campaign) return [];
-		return collectionStore.characters.filter(
-			(c) =>
-				!campaign.characterStates.some((s) => s.characterId === c.id) &&
-				(c.path === 'neutral' || c.path === campaign.pathAlignment)
-		);
-	});
-
-	$effect(() => {
-		campaignStore.hydrate();
-		rosterStore.hydrate();
-		collectionStore.hydrate();
-		baseTemplateStore.hydrate();
+	onMount(async () => {
+		await campaignStore.hydrate();
+		await rosterStore.hydrate();
+		await collectionStore.hydrate();
+		await baseTemplateStore.hydrate();
+		if (campaign) await campaignStore.syncWarband(campaign.id);
 	});
 
 	const pathLabel: Record<string, string> = {
 		advocate: 'Advocate',
 		adversary: 'Adversary'
 	};
+
+	/** State for a warband member, by roster-entry instance. */
+	function stateFor(entryId: string) {
+		return campaign?.characterStates.find((s) => s.entryId === entryId);
+	}
+
+	const fallen = $derived(campaign?.characterStates.filter((s) => s.status === 'dead') ?? []);
+
+	const warbandCost = $derived(
+		roster ? charactersInfluence(roster.entries, collectionStore.charactersById) : 0
+	);
+	const specialistSpend = $derived(
+		campaign?.specialists.reduce((sum, s) => sum + s.influencePaid, 0) ?? 0
+	);
+	const availableInfluence = $derived((campaign?.influence ?? 0) - warbandCost - specialistSpend);
+
+	function matchesForEntry(entryId: string) {
+		return (campaign?.matches ?? [])
+			.map((m) => ({ match: m, outcome: m.outcomes.find((o) => o.entryId === entryId) }))
+			.filter((x) => x.outcome !== undefined);
+	}
+
+	function toggleEntry(entryId: string): void {
+		expandedEntryId = expandedEntryId === entryId ? null : entryId;
+	}
+
+	async function submitHeroicTrait(entryId: string): Promise<void> {
+		if (!campaign) return;
+		const trait = (newHeroicTrait[entryId] ?? '').trim();
+		if (!trait) return;
+		await campaignStore.addHeroicTrait(campaign.id, entryId, trait);
+		newHeroicTrait[entryId] = '';
+	}
+
+	async function submitWoundTrait(entryId: string): Promise<void> {
+		if (!campaign) return;
+		const trait = (newWoundTrait[entryId] ?? '').trim();
+		if (!trait) return;
+		await campaignStore.addWoundTrait(campaign.id, entryId, trait);
+		newWoundTrait[entryId] = '';
+	}
+
+	async function submitRelic(entryId: string): Promise<void> {
+		if (!campaign) return;
+		const relic = (newRelic[entryId] ?? '').trim();
+		if (!relic) return;
+		await campaignStore.addRelic(campaign.id, entryId, relic);
+		newRelic[entryId] = '';
+	}
 
 	function resetBaseForm(): void {
 		baseType = campaign?.base?.type ?? '';
@@ -103,8 +115,7 @@
 
 	function openBaseModal(): void {
 		resetBaseForm();
-		baseModalMode =
-			!campaign?.base && baseTemplateStore.templates.length > 0 ? 'picker' : 'form';
+		baseModalMode = !campaign?.base && baseTemplateStore.templates.length > 0 ? 'picker' : 'form';
 		showBaseModal = true;
 	}
 
@@ -168,13 +179,7 @@
 		showSpecialistCostModal = false;
 	}
 
-	async function pickAdventurer(characterId: string): Promise<void> {
-		if (!campaign) return;
-		const character = collectionStore.getCharacter(characterId);
-		if (!character) return;
-		await campaignStore.recruitAdventurer(campaign.id, characterId, character.stats.health, character.cost);
-		showAdventurerPicker = false;
-	}
+	const resultLabel: Record<string, string> = { win: 'Win', loss: 'Loss', draw: 'Draw' };
 </script>
 
 {#if campaign}
@@ -199,6 +204,13 @@
 		</header>
 
 		<div class="flex-1 overflow-y-auto px-4 py-2">
+			<!-- Campaign game -->
+			<section class="mb-4">
+				<a href="{base}/campaign/{campaign.id}/play" class="btn-primary block w-full text-center">
+					▶ Start Campaign Game
+				</a>
+			</section>
+
 			<!-- Encampment -->
 			<section class="mb-4">
 				<h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-muted">Encampment</h2>
@@ -224,21 +236,37 @@
 				</div>
 
 				<!-- Resources -->
-				<div class="card mb-2 grid grid-cols-2 gap-3">
-					<div>
-						<p class="text-xs text-on-muted">Influence</p>
-						<div class="mt-1 flex items-center gap-2">
-							<Button variant="ghost" onclick={() => campaignStore.adjustInfluence(campaign.id, -1)}>−</Button>
-							<span class="w-8 text-center text-lg font-semibold text-accent">{campaign.influence}</span>
-							<Button variant="ghost" onclick={() => campaignStore.adjustInfluence(campaign.id, 1)}>+</Button>
+				<div class="card mb-2">
+					<div class="grid grid-cols-2 gap-3">
+						<div>
+							<p class="text-xs text-on-muted">Influence budget</p>
+							<div class="mt-1 flex items-center gap-2">
+								<Button variant="ghost" onclick={() => campaignStore.adjustInfluence(campaign.id, -1)}>−</Button>
+								<span class="w-8 text-center text-lg font-semibold text-accent">{campaign.influence}</span>
+								<Button variant="ghost" onclick={() => campaignStore.adjustInfluence(campaign.id, 1)}>+</Button>
+							</div>
+						</div>
+						<div>
+							<p class="text-xs text-on-muted">Gold</p>
+							<div class="mt-1 flex items-center gap-2">
+								<Button variant="ghost" onclick={() => campaignStore.adjustGold(campaign.id, -1)}>−</Button>
+								<span class="w-8 text-center text-lg font-semibold text-accent">{campaign.gold}</span>
+								<Button variant="ghost" onclick={() => campaignStore.adjustGold(campaign.id, 1)}>+</Button>
+							</div>
 						</div>
 					</div>
-					<div>
-						<p class="text-xs text-on-muted">Gold</p>
-						<div class="mt-1 flex items-center gap-2">
-							<Button variant="ghost" onclick={() => campaignStore.adjustGold(campaign.id, -1)}>−</Button>
-							<span class="w-8 text-center text-lg font-semibold text-accent">{campaign.gold}</span>
-							<Button variant="ghost" onclick={() => campaignStore.adjustGold(campaign.id, 1)}>+</Button>
+					<div class="mt-3 border-t border-white/10 pt-2 text-xs text-on-muted">
+						<div class="flex justify-between">
+							<span>Warband ({roster?.entries.length ?? 0})</span>
+							<span>−{warbandCost}</span>
+						</div>
+						<div class="flex justify-between">
+							<span>Specialists</span>
+							<span>−{specialistSpend}</span>
+						</div>
+						<div class="mt-1 flex justify-between font-semibold {availableInfluence < 0 ? 'text-red-400' : 'text-on-surface'}">
+							<span>Available</span>
+							<span>{availableInfluence}</span>
 						</div>
 					</div>
 				</div>
@@ -276,7 +304,7 @@
 							<div class="min-w-0">
 								<p class="truncate text-sm font-medium capitalize">{type}</p>
 								{#if specialist}
-									<p class="text-xs capitalize text-on-muted">{specialist.level}</p>
+									<p class="text-xs capitalize text-on-muted">{specialist.level} · {specialist.influencePaid} inf paid</p>
 								{:else}
 									<p class="text-xs text-on-muted">Not recruited</p>
 								{/if}
@@ -306,77 +334,66 @@
 				</ul>
 			</section>
 
-			<!-- Roster / character progression -->
+			<!-- Warband -->
 			<section class="mb-4">
-				<h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-muted">Warband</h2>
-				{#if roster}
-					<a href="{base}/roster/{roster.id}" class="card flex items-center justify-between gap-3">
-						<div class="min-w-0">
-							<p class="truncate font-semibold">{roster.name}</p>
-							<p class="truncate text-xs text-on-muted">{roster.entries.length} characters</p>
-						</div>
-						<span class="text-on-muted">›</span>
-					</a>
-				{:else}
-					<p class="text-sm text-on-muted">Starting roster not found.</p>
-				{/if}
-
-				<div class="mb-2 mt-3 flex items-center justify-between">
-					<h3 class="text-xs font-semibold uppercase tracking-wider text-on-muted">Adventurers</h3>
-					<button type="button" onclick={() => (showAdventurerPicker = true)} class="text-sm text-accent">
-						+ Recruit
-					</button>
+				<div class="mb-2 flex items-center justify-between">
+					<h2 class="text-sm font-semibold uppercase tracking-wider text-on-muted">Warband</h2>
+					{#if roster}
+						<a href="{base}/roster/{roster.id}" class="text-sm text-accent">Manage warband</a>
+					{/if}
 				</div>
-				{#if campaign.characterStates.length === 0}
-					<p class="text-sm text-on-muted">No adventurers recruited yet.</p>
+
+				{#if !roster}
+					<p class="text-sm text-on-muted">Starting roster not found.</p>
+				{:else if roster.entries.length === 0}
+					<p class="text-sm text-on-muted">
+						No characters yet. <a href="{base}/roster/{roster.id}" class="text-accent">Add some</a> within
+						your influence budget.
+					</p>
 				{:else}
 					<ul class="space-y-1">
-						{#each campaign.characterStates as state (state.characterId)}
-							{@const character = collectionStore.getCharacter(state.characterId)}
-							{@const expanded = expandedAdventurerId === state.characterId}
+						{#each roster.entries as entry (entry.entryId)}
+							{@const character = collectionStore.getCharacter(entry.characterId)}
+							{@const state = stateFor(entry.entryId)}
+							{@const expanded = expandedEntryId === entry.entryId}
+							{@const timeline = matchesForEntry(entry.entryId)}
 							<li class="card">
 								<div class="flex items-center justify-between gap-3">
 									<button
 										type="button"
-										onclick={() => toggleAdventurer(state.characterId)}
+										onclick={() => toggleEntry(entry.entryId)}
 										class="min-w-0 flex-1 text-left"
 										aria-expanded={expanded}
 									>
 										<p class="truncate text-sm font-medium">{character?.name ?? 'Unknown character'}</p>
 										<p class="truncate text-xs text-on-muted">
-											HP {state.currentHealth}/{character?.stats.health ?? '?'} · Valor {state.valor}
-											{#if state.criticalWounds > 0}
-												· {state.criticalWounds} crit ({-state.criticalWounds} AD)
+											HP {state?.currentHealth ?? '?'}/{character?.stats.health ?? '?'} · Valor {state?.valor ?? 0}
+											{#if (state?.criticalWounds ?? 0) > 0}
+												· {state?.criticalWounds} crit ({-(state?.criticalWounds ?? 0)} AD)
 											{/if}
 										</p>
+										<p class="truncate text-xs text-on-muted">
+											{state?.kills ?? 0} kills · {state?.objectives ?? 0} obj · {state?.gamesPlayed ?? 0} games
+										</p>
 									</button>
-									<div class="flex shrink-0 items-center gap-3 text-sm">
-										<button
-											type="button"
-											onclick={() => toggleAdventurer(state.characterId)}
-											class="text-on-muted"
-											aria-label={expanded ? 'Collapse' : 'Expand'}
-										>
-											{expanded ? '▴' : '▾'}
-										</button>
-										<button
-											type="button"
-											onclick={() => (confirmRemoveAdventurerId = state.characterId)}
-											class="text-on-muted hover:text-on-surface"
-										>
-											Remove
-										</button>
-									</div>
+									<button
+										type="button"
+										onclick={() => toggleEntry(entry.entryId)}
+										class="shrink-0 text-on-muted"
+										aria-label={expanded ? 'Collapse' : 'Expand'}
+									>
+										{expanded ? '▴' : '▾'}
+									</button>
 								</div>
 
-								{#if expanded}
+								{#if expanded && state}
 									<div class="mt-3 space-y-3 border-t border-white/10 pt-3">
 										<div class="flex items-center justify-between">
 											<p class="text-xs text-on-muted">Health</p>
 											<div class="flex items-center gap-2">
 												<Button
 													variant="ghost"
-													onclick={() => campaignStore.setCurrentHealth(campaign.id, state.characterId, state.currentHealth - 1)}
+													onclick={() => campaignStore.setCurrentHealth(campaign.id, entry.entryId, (state?.currentHealth ?? 0) - 1)}
 												>
 													−
 												</Button>
@@ -388,7 +405,7 @@
 													onclick={() =>
 														campaignStore.setCurrentHealth(
 															campaign.id,
-															state.characterId,
+															entry.entryId,
 															Math.min(character?.stats.health ?? state.currentHealth, state.currentHealth + 1)
 														)}
 												>
@@ -400,17 +417,11 @@
 										<div class="flex items-center justify-between">
 											<p class="text-xs text-on-muted">Critical Wounds (−1 AD each)</p>
 											<div class="flex items-center gap-2">
-												<Button
-													variant="ghost"
-													onclick={() => campaignStore.adjustCriticalWounds(campaign.id, state.characterId, -1)}
-												>
+												<Button variant="ghost" onclick={() => campaignStore.adjustCriticalWounds(campaign.id, entry.entryId, -1)}>
 													−
 												</Button>
 												<span class="w-8 text-center text-sm font-semibold">{state.criticalWounds}</span>
-												<Button
-													variant="ghost"
-													onclick={() => campaignStore.adjustCriticalWounds(campaign.id, state.characterId, 1)}
-												>
+												<Button variant="ghost" onclick={() => campaignStore.adjustCriticalWounds(campaign.id, entry.entryId, 1)}>
 													+
 												</Button>
 											</div>
@@ -419,11 +430,11 @@
 										<div class="flex items-center justify-between">
 											<p class="text-xs text-on-muted">Valor</p>
 											<div class="flex items-center gap-2">
-												<Button variant="ghost" onclick={() => campaignStore.adjustValor(campaign.id, state.characterId, -1)}>
+												<Button variant="ghost" onclick={() => campaignStore.adjustValor(campaign.id, entry.entryId, -1)}>
 													−
 												</Button>
 												<span class="w-8 text-center text-sm font-semibold">{state.valor}</span>
-												<Button variant="ghost" onclick={() => campaignStore.adjustValor(campaign.id, state.characterId, 1)}>
+												<Button variant="ghost" onclick={() => campaignStore.adjustValor(campaign.id, entry.entryId, 1)}>
 													+
 												</Button>
 											</div>
@@ -438,7 +449,7 @@
 															<span class="truncate">{trait}</span>
 															<button
 																type="button"
-																onclick={() => campaignStore.removeHeroicTrait(campaign.id, state.characterId, i)}
+																onclick={() => campaignStore.removeHeroicTrait(campaign.id, entry.entryId, i)}
 																class="text-on-muted hover:text-on-surface"
 																aria-label="Remove heroic trait"
 															>
@@ -451,11 +462,11 @@
 											<div class="flex gap-2">
 												<input
 													type="text"
-													bind:value={newHeroicTrait[state.characterId]}
+													bind:value={newHeroicTrait[entry.entryId]}
 													placeholder="Add a heroic trait"
 													class="min-w-0 flex-1 rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
 												/>
-												<Button variant="ghost" onclick={() => submitHeroicTrait(state.characterId)}>Add</Button>
+												<Button variant="ghost" onclick={() => submitHeroicTrait(entry.entryId)}>Add</Button>
 											</div>
 										</div>
 
@@ -468,7 +479,7 @@
 															<span class="truncate">{trait}</span>
 															<button
 																type="button"
-																onclick={() => campaignStore.removeWoundTrait(campaign.id, state.characterId, i)}
+																onclick={() => campaignStore.removeWoundTrait(campaign.id, entry.entryId, i)}
 																class="text-on-muted hover:text-on-surface"
 																aria-label="Remove wound trait"
 															>
@@ -481,11 +492,11 @@
 											<div class="flex gap-2">
 												<input
 													type="text"
-													bind:value={newWoundTrait[state.characterId]}
+													bind:value={newWoundTrait[entry.entryId]}
 													placeholder="Add a wound trait"
 													class="min-w-0 flex-1 rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
 												/>
-												<Button variant="ghost" onclick={() => submitWoundTrait(state.characterId)}>Add</Button>
+												<Button variant="ghost" onclick={() => submitWoundTrait(entry.entryId)}>Add</Button>
 											</div>
 										</div>
 
@@ -498,7 +509,7 @@
 															<span class="truncate">{relic}</span>
 															<button
 																type="button"
-																onclick={() => campaignStore.removeRelic(campaign.id, state.characterId, i)}
+																onclick={() => campaignStore.removeRelic(campaign.id, entry.entryId, i)}
 																class="text-on-muted hover:text-on-surface"
 																aria-label="Remove relic"
 															>
@@ -511,40 +522,72 @@
 											<div class="flex gap-2">
 												<input
 													type="text"
-													bind:value={newRelic[state.characterId]}
+													bind:value={newRelic[entry.entryId]}
 													placeholder="Add a relic"
 													class="min-w-0 flex-1 rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
 												/>
-												<Button variant="ghost" onclick={() => submitRelic(state.characterId)}>Add</Button>
+												<Button variant="ghost" onclick={() => submitRelic(entry.entryId)}>Add</Button>
 											</div>
 										</div>
+
+										{#if timeline.length > 0}
+											<div>
+												<p class="mb-1 text-xs text-on-muted">History</p>
+												<ul class="space-y-1">
+													{#each timeline as { match, outcome } (match.id)}
+														<li class="rounded bg-surface-overlay px-2 py-1 text-xs">
+															<span class="capitalize">{resultLabel[match.result]}</span>
+															{#if match.scenario} · {match.scenario}{/if}
+															· {outcome?.kills ?? 0}k / {outcome?.objectives ?? 0}o
+															{#if (outcome?.valorGained ?? 0) !== 0} · +{outcome?.valorGained} valor{/if}
+															{#if outcome?.injuryOutcome && outcome.injuryOutcome !== 'none'}
+																· <span class="text-red-400">{outcome.injuryOutcome}</span>
+															{/if}
+														</li>
+													{/each}
+												</ul>
+											</div>
+										{/if}
 									</div>
 								{/if}
 							</li>
 						{/each}
 					</ul>
 				{/if}
-			</section>
 
-			<!-- Adventures -->
-			<section class="mb-4">
-				<h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-muted">Adventures</h2>
-				<!-- TODO Sprint 7 (#19): guided campaign game wizard -->
-				<p class="text-sm text-on-muted">Adventure flow coming soon.</p>
+				{#if fallen.length > 0}
+					<h3 class="mb-1 mt-3 text-xs font-semibold uppercase tracking-wider text-on-muted">Fallen</h3>
+					<ul class="space-y-1">
+						{#each fallen as state (state.entryId)}
+							{@const character = collectionStore.getCharacter(state.characterId)}
+							<li class="card text-sm opacity-70">
+								<p class="font-medium">{character?.name ?? 'Unknown character'} <span class="text-xs text-red-400">† fallen</span></p>
+								<p class="text-xs text-on-muted">
+									{state.kills} kills · {state.objectives} obj · {state.gamesPlayed} games · Valor {state.valor}
+								</p>
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</section>
 
 			<!-- Match history -->
 			<section class="mb-4">
 				<h2 class="mb-2 text-sm font-semibold uppercase tracking-wider text-on-muted">Match History</h2>
 				{#if campaign.matches.length === 0}
-					<!-- TODO Sprint 7 (#20): post-game resolution & match history -->
 					<p class="text-sm text-on-muted">No matches recorded yet.</p>
 				{:else}
 					<ul class="space-y-1">
-						{#each campaign.matches as match (match.id)}
+						{#each [...campaign.matches].reverse() as match (match.id)}
 							<li class="card text-sm">
-								<p class="font-medium capitalize">{match.result}{#if match.scenario} · {match.scenario}{/if}</p>
-								<p class="text-xs text-on-muted">{match.date}</p>
+								<p class="font-medium capitalize">
+									{resultLabel[match.result]}{#if match.scenario} · {match.scenario}{/if}
+								</p>
+								<p class="text-xs text-on-muted">
+									{new Date(match.date).toLocaleDateString()}
+									{#if match.influenceEarned} · +{match.influenceEarned} inf{/if}
+									{#if match.goldEarned} · +{match.goldEarned} gold{/if}
+								</p>
 							</li>
 						{/each}
 					</ul>
@@ -716,40 +759,6 @@
 		{/snippet}
 	</Modal>
 
-	<CharacterPickerSheet
-		open={showAdventurerPicker}
-		characters={availableAdventurers}
-		onpick={pickAdventurer}
-		onclose={() => (showAdventurerPicker = false)}
-		title="Recruit adventurer"
-		actionLabel="+ Recruit"
-	/>
-
-	<Modal
-		open={confirmRemoveAdventurerId !== null}
-		title="Remove adventurer?"
-		onclose={() => (confirmRemoveAdventurerId = null)}
-	>
-		{#snippet children()}
-			<p class="text-on-muted">
-				This cannot be undone. Their progression (heroic traits, wounds, relics) will be lost.
-			</p>
-		{/snippet}
-		{#snippet actions()}
-			<Button variant="ghost" onclick={() => (confirmRemoveAdventurerId = null)}>Cancel</Button>
-			<Button
-				variant="danger"
-				onclick={async () => {
-					if (!campaign || !confirmRemoveAdventurerId) return;
-					await campaignStore.removeAdventurer(campaign.id, confirmRemoveAdventurerId);
-					confirmRemoveAdventurerId = null;
-				}}
-			>
-				Remove
-			</Button>
-		{/snippet}
-	</Modal>
-
 	<Modal open={confirmDelete} title="Delete campaign?" onclose={() => (confirmDelete = false)}>
 		{#snippet children()}
 			<p class="text-on-muted">This cannot be undone. "{campaign.name}" and its progress will be removed.</p>
@@ -780,6 +789,6 @@
 	</div>
 {:else}
 	<div class="p-4">
-		<p class="text-on-muted">Loading…</p>
+		<p class="py-8 text-center text-sm text-on-muted">Loading…</p>
 	</div>
 {/if}

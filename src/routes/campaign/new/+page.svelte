@@ -8,6 +8,7 @@
 
 	let name = $state('');
 	let rosterId = $state('');
+	let startingInfluence = $state(50);
 
 	let errors = $state<Record<string, string>>({});
 
@@ -25,7 +26,12 @@
 
 	async function handleSubmit() {
 		if (!validate()) return;
-		const campaign = await campaignStore.create(name.trim(), rosterId, 'advocate');
+		const campaign = await campaignStore.create(
+			name.trim(),
+			rosterId,
+			'advocate',
+			Math.max(0, startingInfluence)
+		);
 		toastStore.success(`${campaign.name} created`);
 		goto(`${base}/campaign/${campaign.id}`);
 	}
@@ -71,6 +77,21 @@
 					{/each}
 				</select>
 				{#if errors.rosterId}<p class="mt-1 text-xs text-red-400">{errors.rosterId}</p>{/if}
+			</div>
+
+			<div>
+				<label class="mb-1 block text-sm" for="startingInfluence">Starting influence *</label>
+				<input
+					id="startingInfluence"
+					type="number"
+					min="0"
+					bind:value={startingInfluence}
+					class="w-full rounded-lg bg-surface-overlay px-3 py-2 text-on-surface outline-none focus:ring-2 focus:ring-accent"
+				/>
+				<p class="mt-1 text-xs text-on-muted">
+					Your influence budget for the warband (Seeker's Handbook standard start = 50). The roster
+					switches to threat mode (characters count, upgrades are bought with gold).
+				</p>
 			</div>
 
 			<p class="text-xs text-on-muted">

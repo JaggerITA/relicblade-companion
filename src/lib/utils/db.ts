@@ -1,12 +1,12 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { BaseTemplate, Campaign } from '$lib/models/Campaign.js';
+import type { BaseTemplate, Campaign, Environment, Scenario } from '$lib/models/Campaign.js';
 import type { Character } from '$lib/models/Character.js';
 import type { GameState } from '$lib/models/GameState.js';
 import type { Roster } from '$lib/models/Roster.js';
 import type { Upgrade } from '$lib/models/Upgrade.js';
 
 const DB_NAME = 'relicblade';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 interface RelicbladeDB extends DBSchema {
 	characters: {
@@ -39,6 +39,16 @@ interface RelicbladeDB extends DBSchema {
 		value: BaseTemplate;
 		indexes: { 'by-updated': string };
 	};
+	scenarios: {
+		key: string;
+		value: Scenario;
+		indexes: { 'by-updated': string };
+	};
+	environments: {
+		key: string;
+		value: Environment;
+		indexes: { 'by-updated': string };
+	};
 	settings: {
 		key: string;
 		value: unknown;
@@ -52,6 +62,8 @@ type StoreName =
 	| 'games'
 	| 'campaigns'
 	| 'baseTemplates'
+	| 'scenarios'
+	| 'environments'
 	| 'settings';
 
 let dbPromise: Promise<IDBPDatabase<RelicbladeDB>> | null = null;
@@ -86,6 +98,13 @@ function getDb(): Promise<IDBPDatabase<RelicbladeDB>> {
 				if (oldVersion < 2) {
 					const bt = db.createObjectStore('baseTemplates', { keyPath: 'id' });
 					bt.createIndex('by-updated', 'updatedAt');
+				}
+				if (oldVersion < 3) {
+					const sc = db.createObjectStore('scenarios', { keyPath: 'id' });
+					sc.createIndex('by-updated', 'updatedAt');
+
+					const env = db.createObjectStore('environments', { keyPath: 'id' });
+					env.createIndex('by-updated', 'updatedAt');
 				}
 			}
 		});
