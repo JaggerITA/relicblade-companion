@@ -37,6 +37,38 @@
 
 	let showAdventurerPicker = $state(false);
 	let confirmRemoveAdventurerId = $state<string | null>(null);
+	let expandedAdventurerId = $state<string | null>(null);
+	let newHeroicTrait = $state<Record<string, string>>({});
+	let newWoundTrait = $state<Record<string, string>>({});
+	let newRelic = $state<Record<string, string>>({});
+
+	function toggleAdventurer(characterId: string): void {
+		expandedAdventurerId = expandedAdventurerId === characterId ? null : characterId;
+	}
+
+	async function submitHeroicTrait(characterId: string): Promise<void> {
+		if (!campaign) return;
+		const trait = (newHeroicTrait[characterId] ?? '').trim();
+		if (!trait) return;
+		await campaignStore.addHeroicTrait(campaign.id, characterId, trait);
+		newHeroicTrait[characterId] = '';
+	}
+
+	async function submitWoundTrait(characterId: string): Promise<void> {
+		if (!campaign) return;
+		const trait = (newWoundTrait[characterId] ?? '').trim();
+		if (!trait) return;
+		await campaignStore.addWoundTrait(campaign.id, characterId, trait);
+		newWoundTrait[characterId] = '';
+	}
+
+	async function submitRelic(characterId: string): Promise<void> {
+		if (!campaign) return;
+		const relic = (newRelic[characterId] ?? '').trim();
+		if (!relic) return;
+		await campaignStore.addRelic(campaign.id, characterId, relic);
+		newRelic[characterId] = '';
+	}
 
 	const availableAdventurers = $derived.by(() => {
 		if (!campaign) return [];
@@ -232,8 +264,6 @@
 						+ Establish base
 					</button>
 				{/if}
-
-				<!-- TODO Sprint 7 (#16/#17): Valor is earned per-character, shown once followers are recruited -->
 			</section>
 
 			<!-- Followers -->
@@ -298,24 +328,198 @@
 					</button>
 				</div>
 				{#if campaign.characterStates.length === 0}
-					<!-- TODO Sprint 7 (#17): Heroic Traits, wounds, recovery, relics, valor per character -->
 					<p class="text-sm text-on-muted">No adventurers recruited yet.</p>
 				{:else}
 					<ul class="space-y-1">
 						{#each campaign.characterStates as state (state.characterId)}
 							{@const character = collectionStore.getCharacter(state.characterId)}
-							<li class="card flex items-center justify-between gap-3">
-								<div class="min-w-0">
-									<p class="truncate text-sm font-medium">{character?.name ?? 'Unknown character'}</p>
-									<p class="text-xs text-on-muted">Valor {state.valor}</p>
+							{@const expanded = expandedAdventurerId === state.characterId}
+							<li class="card">
+								<div class="flex items-center justify-between gap-3">
+									<button
+										type="button"
+										onclick={() => toggleAdventurer(state.characterId)}
+										class="min-w-0 flex-1 text-left"
+										aria-expanded={expanded}
+									>
+										<p class="truncate text-sm font-medium">{character?.name ?? 'Unknown character'}</p>
+										<p class="truncate text-xs text-on-muted">
+											HP {state.currentHealth}/{character?.stats.health ?? '?'} · Valor {state.valor}
+											{#if state.criticalWounds > 0}
+												· {state.criticalWounds} crit ({-state.criticalWounds} AD)
+											{/if}
+										</p>
+									</button>
+									<div class="flex shrink-0 items-center gap-3 text-sm">
+										<button
+											type="button"
+											onclick={() => toggleAdventurer(state.characterId)}
+											class="text-on-muted"
+											aria-label={expanded ? 'Collapse' : 'Expand'}
+										>
+											{expanded ? '▴' : '▾'}
+										</button>
+										<button
+											type="button"
+											onclick={() => (confirmRemoveAdventurerId = state.characterId)}
+											class="text-on-muted hover:text-on-surface"
+										>
+											Remove
+										</button>
+									</div>
 								</div>
-								<button
-									type="button"
-									onclick={() => (confirmRemoveAdventurerId = state.characterId)}
-									class="shrink-0 text-sm text-on-muted hover:text-on-surface"
-								>
-									Remove
-								</button>
+
+								{#if expanded}
+									<div class="mt-3 space-y-3 border-t border-white/10 pt-3">
+										<div class="flex items-center justify-between">
+											<p class="text-xs text-on-muted">Health</p>
+											<div class="flex items-center gap-2">
+												<Button
+													variant="ghost"
+													onclick={() => campaignStore.setCurrentHealth(campaign.id, state.characterId, state.currentHealth - 1)}
+												>
+													−
+												</Button>
+												<span class="w-14 text-center text-sm font-semibold">
+													{state.currentHealth}/{character?.stats.health ?? '?'}
+												</span>
+												<Button
+													variant="ghost"
+													onclick={() =>
+														campaignStore.setCurrentHealth(
+															campaign.id,
+															state.characterId,
+															Math.min(character?.stats.health ?? state.currentHealth, state.currentHealth + 1)
+														)}
+												>
+													+
+												</Button>
+											</div>
+										</div>
+
+										<div class="flex items-center justify-between">
+											<p class="text-xs text-on-muted">Critical Wounds (−1 AD each)</p>
+											<div class="flex items-center gap-2">
+												<Button
+													variant="ghost"
+													onclick={() => campaignStore.adjustCriticalWounds(campaign.id, state.characterId, -1)}
+												>
+													−
+												</Button>
+												<span class="w-8 text-center text-sm font-semibold">{state.criticalWounds}</span>
+												<Button
+													variant="ghost"
+													onclick={() => campaignStore.adjustCriticalWounds(campaign.id, state.characterId, 1)}
+												>
+													+
+												</Button>
+											</div>
+										</div>
+
+										<div class="flex items-center justify-between">
+											<p class="text-xs text-on-muted">Valor</p>
+											<div class="flex items-center gap-2">
+												<Button variant="ghost" onclick={() => campaignStore.adjustValor(campaign.id, state.characterId, -1)}>
+													−
+												</Button>
+												<span class="w-8 text-center text-sm font-semibold">{state.valor}</span>
+												<Button variant="ghost" onclick={() => campaignStore.adjustValor(campaign.id, state.characterId, 1)}>
+													+
+												</Button>
+											</div>
+										</div>
+
+										<div>
+											<p class="mb-1 text-xs text-on-muted">Heroic Traits</p>
+											{#if state.heroicTraits.length > 0}
+												<ul class="mb-2 space-y-1">
+													{#each state.heroicTraits as trait, i (i)}
+														<li class="flex items-center justify-between gap-2 rounded bg-surface-overlay px-2 py-1 text-sm">
+															<span class="truncate">{trait}</span>
+															<button
+																type="button"
+																onclick={() => campaignStore.removeHeroicTrait(campaign.id, state.characterId, i)}
+																class="text-on-muted hover:text-on-surface"
+																aria-label="Remove heroic trait"
+															>
+																×
+															</button>
+														</li>
+													{/each}
+												</ul>
+											{/if}
+											<div class="flex gap-2">
+												<input
+													type="text"
+													bind:value={newHeroicTrait[state.characterId]}
+													placeholder="Add a heroic trait"
+													class="min-w-0 flex-1 rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
+												/>
+												<Button variant="ghost" onclick={() => submitHeroicTrait(state.characterId)}>Add</Button>
+											</div>
+										</div>
+
+										<div>
+											<p class="mb-1 text-xs text-on-muted">Wound Traits</p>
+											{#if state.woundTraits.length > 0}
+												<ul class="mb-2 space-y-1">
+													{#each state.woundTraits as trait, i (i)}
+														<li class="flex items-center justify-between gap-2 rounded bg-surface-overlay px-2 py-1 text-sm">
+															<span class="truncate">{trait}</span>
+															<button
+																type="button"
+																onclick={() => campaignStore.removeWoundTrait(campaign.id, state.characterId, i)}
+																class="text-on-muted hover:text-on-surface"
+																aria-label="Remove wound trait"
+															>
+																×
+															</button>
+														</li>
+													{/each}
+												</ul>
+											{/if}
+											<div class="flex gap-2">
+												<input
+													type="text"
+													bind:value={newWoundTrait[state.characterId]}
+													placeholder="Add a wound trait"
+													class="min-w-0 flex-1 rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
+												/>
+												<Button variant="ghost" onclick={() => submitWoundTrait(state.characterId)}>Add</Button>
+											</div>
+										</div>
+
+										<div>
+											<p class="mb-1 text-xs text-on-muted">Relics</p>
+											{#if state.relics.length > 0}
+												<ul class="mb-2 space-y-1">
+													{#each state.relics as relic, i (i)}
+														<li class="flex items-center justify-between gap-2 rounded bg-surface-overlay px-2 py-1 text-sm">
+															<span class="truncate">{relic}</span>
+															<button
+																type="button"
+																onclick={() => campaignStore.removeRelic(campaign.id, state.characterId, i)}
+																class="text-on-muted hover:text-on-surface"
+																aria-label="Remove relic"
+															>
+																×
+															</button>
+														</li>
+													{/each}
+												</ul>
+											{/if}
+											<div class="flex gap-2">
+												<input
+													type="text"
+													bind:value={newRelic[state.characterId]}
+													placeholder="Add a relic"
+													class="min-w-0 flex-1 rounded-lg bg-surface-overlay px-3 py-2 text-sm text-on-surface outline-none focus:ring-2 focus:ring-accent"
+												/>
+												<Button variant="ghost" onclick={() => submitRelic(state.characterId)}>Add</Button>
+											</div>
+										</div>
+									</div>
+								{/if}
 							</li>
 						{/each}
 					</ul>

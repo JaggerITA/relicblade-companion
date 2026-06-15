@@ -157,6 +157,84 @@ function createCampaignStore() {
 		});
 	}
 
+	async function updateCharacterState(
+		id: string,
+		characterId: string,
+		fn: (state: CharacterCampaignState) => CharacterCampaignState
+	): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		await persist({
+			...campaign,
+			characterStates: campaign.characterStates.map((s) =>
+				s.characterId === characterId ? fn(s) : s
+			)
+		});
+	}
+
+	async function addHeroicTrait(id: string, characterId: string, trait: string): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			heroicTraits: [...s.heroicTraits, trait]
+		}));
+	}
+
+	async function removeHeroicTrait(id: string, characterId: string, index: number): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			heroicTraits: s.heroicTraits.filter((_, i) => i !== index)
+		}));
+	}
+
+	async function addWoundTrait(id: string, characterId: string, trait: string): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			woundTraits: [...s.woundTraits, trait]
+		}));
+	}
+
+	async function removeWoundTrait(id: string, characterId: string, index: number): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			woundTraits: s.woundTraits.filter((_, i) => i !== index)
+		}));
+	}
+
+	async function addRelic(id: string, characterId: string, relic: string): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			relics: [...s.relics, relic]
+		}));
+	}
+
+	async function removeRelic(id: string, characterId: string, index: number): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			relics: s.relics.filter((_, i) => i !== index)
+		}));
+	}
+
+	async function adjustCriticalWounds(id: string, characterId: string, delta: number): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			criticalWounds: Math.max(0, s.criticalWounds + delta)
+		}));
+	}
+
+	async function adjustValor(id: string, characterId: string, delta: number): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			valor: Math.max(0, s.valor + delta)
+		}));
+	}
+
+	async function setCurrentHealth(id: string, characterId: string, currentHealth: number): Promise<void> {
+		await updateCharacterState(id, characterId, (s) => ({
+			...s,
+			currentHealth: Math.max(0, currentHealth)
+		}));
+	}
+
 	async function removeSpecialist(id: string, type: SpecialistType): Promise<void> {
 		const campaign = getCampaign(id);
 		if (!campaign) return;
@@ -200,6 +278,15 @@ function createCampaignStore() {
 		recruitSpecialist,
 		advanceSpecialist,
 		removeSpecialist,
+		addHeroicTrait,
+		removeHeroicTrait,
+		addWoundTrait,
+		removeWoundTrait,
+		addRelic,
+		removeRelic,
+		adjustCriticalWounds,
+		adjustValor,
+		setCurrentHealth,
 		deleteCampaign,
 		importCampaigns
 	};

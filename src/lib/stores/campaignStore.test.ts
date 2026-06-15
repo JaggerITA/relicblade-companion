@@ -230,6 +230,72 @@ describe('campaignStore', () => {
 		});
 	});
 
+	describe('character progression', () => {
+		beforeEach(async () => {
+			await campaignStore.create('Volgelands', 'roster-1', 'advocate');
+			await campaignStore.adjustInfluence('campaign-1', 50);
+			await campaignStore.recruitAdventurer('campaign-1', 'char-1', 10, 15);
+		});
+
+		it('adds and removes heroic traits', async () => {
+			await campaignStore.addHeroicTrait('campaign-1', 'char-1', 'Iron Will');
+			await campaignStore.addHeroicTrait('campaign-1', 'char-1', 'Quick Reflexes');
+
+			let state = campaignStore.getCampaign('campaign-1')?.characterStates[0];
+			expect(state?.heroicTraits).toEqual(['Iron Will', 'Quick Reflexes']);
+
+			await campaignStore.removeHeroicTrait('campaign-1', 'char-1', 0);
+			state = campaignStore.getCampaign('campaign-1')?.characterStates[0];
+			expect(state?.heroicTraits).toEqual(['Quick Reflexes']);
+		});
+
+		it('adds and removes wound traits', async () => {
+			await campaignStore.addWoundTrait('campaign-1', 'char-1', 'Limp');
+
+			let state = campaignStore.getCampaign('campaign-1')?.characterStates[0];
+			expect(state?.woundTraits).toEqual(['Limp']);
+
+			await campaignStore.removeWoundTrait('campaign-1', 'char-1', 0);
+			state = campaignStore.getCampaign('campaign-1')?.characterStates[0];
+			expect(state?.woundTraits).toEqual([]);
+		});
+
+		it('adds and removes relics', async () => {
+			await campaignStore.addRelic('campaign-1', 'char-1', 'Ring of the Fox');
+
+			let state = campaignStore.getCampaign('campaign-1')?.characterStates[0];
+			expect(state?.relics).toEqual(['Ring of the Fox']);
+
+			await campaignStore.removeRelic('campaign-1', 'char-1', 0);
+			state = campaignStore.getCampaign('campaign-1')?.characterStates[0];
+			expect(state?.relics).toEqual([]);
+		});
+
+		it('adjusts critical wounds and clamps at 0', async () => {
+			await campaignStore.adjustCriticalWounds('campaign-1', 'char-1', 1);
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates[0]?.criticalWounds).toBe(1);
+
+			await campaignStore.adjustCriticalWounds('campaign-1', 'char-1', -5);
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates[0]?.criticalWounds).toBe(0);
+		});
+
+		it('adjusts valor and clamps at 0', async () => {
+			await campaignStore.adjustValor('campaign-1', 'char-1', 3);
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates[0]?.valor).toBe(3);
+
+			await campaignStore.adjustValor('campaign-1', 'char-1', -5);
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates[0]?.valor).toBe(0);
+		});
+
+		it('sets current health and clamps at 0', async () => {
+			await campaignStore.setCurrentHealth('campaign-1', 'char-1', 7);
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates[0]?.currentHealth).toBe(7);
+
+			await campaignStore.setCurrentHealth('campaign-1', 'char-1', -3);
+			expect(campaignStore.getCampaign('campaign-1')?.characterStates[0]?.currentHealth).toBe(0);
+		});
+	});
+
 	describe('deleteCampaign', () => {
 		it('removes the campaign from state and db', async () => {
 			await campaignStore.create('Volgelands', 'roster-1', 'advocate');

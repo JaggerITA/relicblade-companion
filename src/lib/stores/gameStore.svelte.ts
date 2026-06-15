@@ -3,9 +3,11 @@ import { newId } from '$lib/utils/id.js';
 import { hasKeyword } from '$lib/utils/computeEffectiveStats.js';
 import { rollInitiative as rollInitiativeDice, rollRecovery as rollRecoveryDice } from '$lib/utils/dice.js';
 import { collectionStore } from './collectionStore.svelte.js';
+import { campaignStore } from './campaignStore.svelte.js';
 import type { InitiativeResult } from '$lib/utils/dice.js';
 import type { GameState, ModelState } from '$lib/models/GameState.js';
 import type { Roster } from '$lib/models/Roster.js';
+import type { CharacterCampaignState } from '$lib/models/Campaign.js';
 
 function createGameStore() {
 	let games = $state<GameState[]>([]);
@@ -48,23 +50,35 @@ function createGameStore() {
 		return plain;
 	}
 
-	/** Resolves each entry's Character (cross-store rule: games never embed Characters) into in-game state. */
-	function buildModelStates(roster: Roster, owner: 1 | 2): ModelState[] {
+	/**
+	 * Resolves each entry's Character (cross-store rule: games never embed Characters) into in-game
+	 * state. For a campaign game, `characterStates` carries over `currentHealth` between adventures
+	 * and seeds `actionDiceModifier` with `-criticalWounds` (ADR-007: deltas only — persistent
+	 * critical wounds are exactly the "-1 AD per wound" delta this field already documents).
+	 */
+	function buildModelStates(
+		roster: Roster,
+		owner: 1 | 2,
+		characterStates?: CharacterCampaignState[]
+	): ModelState[] {
 		const states: ModelState[] = [];
 		for (const entry of roster.entries) {
 			const character = collectionStore.getCharacter(entry.characterId);
 			if (!character) continue;
 			// Constructs enter play inert — fuel cells start empty (Game Rules #type/construct)
 			const isConstruct = hasKeyword(character, 'Construct');
+			const campaignState = characterStates?.find((s) => s.characterId === character.id);
 			states.push({
 				entryId: entry.entryId,
 				characterId: character.id,
 				rosterOwner: owner,
-				currentHealth: isConstruct ? 0 : character.stats.health,
+				currentHealth: isConstruct
+					? 0
+					: Math.min(character.stats.health, campaignState?.currentHealth ?? character.stats.health),
 				maxHealth: character.stats.health,
 				activated: false,
 				conditions: [],
-				actionDiceModifier: 0,
+				actionDiceModifier: campaignState ? -campaignState.criticalWounds : 0,
 				isConstruct,
 				destroyed: false
 			});
@@ -78,6 +92,9 @@ function createGameStore() {
 		isCampaignGame = false,
 		campaignId?: string
 	): Promise<GameState> {
+		const characterStates = isCampaignGame && campaignId
+			? campaignStore.getCampaign(campaignId)?.characterStates
+			: undefined;
 		const game = $state.snapshot({
 			id: newId(),
 			roster1,
@@ -85,7 +102,10 @@ function createGameStore() {
 			currentRound: 1,
 			phase: 'initiative',
 			initiative: null,
-			models: [...buildModelStates(roster1, 1), ...buildModelStates(roster2, 2)],
+			models: [
+				...buildModelStates(roster1, 1, characterStates),
+				...buildModelStates(roster2, 2, characterStates)
+			],
 			startedAt: new Date().toISOString(),
 			isCampaignGame,
 			campaignId

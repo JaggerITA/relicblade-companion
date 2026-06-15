@@ -17,6 +17,7 @@ vi.mock('./collectionStore.svelte.js', () => ({
 import { dbDelete, dbGetAll, dbPut } from '$lib/utils/db.js';
 import { newId } from '$lib/utils/id.js';
 import { collectionStore } from './collectionStore.svelte.js';
+import { campaignStore } from './campaignStore.svelte.js';
 import { gameStore } from './gameStore.svelte.js';
 import type { Character } from '$lib/models/Character.js';
 import type { Roster } from '$lib/models/Roster.js';
@@ -76,6 +77,7 @@ describe('gameStore', () => {
 		for (const key of Object.keys(charactersById)) delete charactersById[key];
 		vi.mocked(collectionStore.getCharacter).mockImplementation((id: string) => charactersById[id]);
 		gameStore._reset();
+		campaignStore._reset();
 	});
 
 	describe('start', () => {
@@ -116,6 +118,23 @@ describe('gameStore', () => {
 		it('skips entries whose Character is missing from the collection', async () => {
 			const game = await gameStore.start(makeRoster([{ characterId: 'ghost' }]), makeRoster([]));
 			expect(game.models).toHaveLength(0);
+		});
+
+		it('carries over currentHealth and seeds actionDiceModifier from criticalWounds for a campaign game', async () => {
+			registerCharacter(makeCharacter({ id: 'knight', stats: { actionDice: 4, speed: 5, armor: 3, health: 6 } }));
+			const campaign = await campaignStore.create('Test Campaign', 'roster-1', 'advocate');
+			await campaignStore.recruitAdventurer(campaign.id, 'knight', 6, 0);
+			await campaignStore.setCurrentHealth(campaign.id, 'knight', 3);
+			await campaignStore.adjustCriticalWounds(campaign.id, 'knight', 2);
+
+			const game = await gameStore.start(
+				makeRoster([{ characterId: 'knight' }]),
+				makeRoster([]),
+				true,
+				campaign.id
+			);
+
+			expect(game.models[0]).toMatchObject({ currentHealth: 3, maxHealth: 6, actionDiceModifier: -2 });
 		});
 	});
 
