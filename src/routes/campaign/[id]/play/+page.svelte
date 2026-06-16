@@ -26,15 +26,24 @@
 		environmentStore.hydrate();
 	});
 
-	const STEPS = ['Threat', 'Scenario', 'Environment', 'Setup', 'Wild Monsters', 'Review'] as const;
+	const STEPS = ['Threat', 'Scenario', 'Environment', 'Setup', 'Opponent', 'Review'] as const;
 	let step = $state(0);
 
 	let threatLevel = $state(0);
 	let scenarioId = $state<string | null>(null);
 	let environmentId = $state<string | null>(null);
+	let opponentType = $state<'monsters' | 'roster'>('monsters');
+	let opponentRosterId = $state<string | null>(null);
 	let wildMonsterIds = $state<string[]>([]);
 	let showMonsterPicker = $state(false);
 	let starting = $state(false);
+
+	const availableOpponentRosters = $derived(
+		rosterStore.rosters.filter((r) => r.id !== campaign?.rosterId)
+	);
+	const selectedOpponentRoster = $derived(
+		opponentRosterId ? rosterStore.getRoster(opponentRosterId) : undefined
+	);
 
 	const selectedScenario = $derived(scenarioId ? scenarioStore.getScenario(scenarioId) : undefined);
 	const selectedEnvironment = $derived(
@@ -61,25 +70,30 @@
 		if (!campaign || !roster) return;
 		starting = true;
 		try {
-			const now = new Date().toISOString();
-			const entries = wildMonsterIds.map((characterId) => ({
-				entryId: newId(),
-				characterId,
-				equippedUpgradeIds: [],
-				entryInfluence: collectionStore.getCharacter(characterId)?.cost ?? 0
-			}));
-			const wildMonsterRoster: Roster = {
-				id: newId(),
-				name: 'Wild Monsters',
-				faction: '',
-				limitMode: 'threat',
-				maxInfluence: 0,
-				entries,
-				totalInfluence: entries.reduce((sum, e) => sum + e.entryInfluence, 0),
-				createdAt: now,
-				updatedAt: now
-			};
-			const game = await gameStore.start(roster, wildMonsterRoster, true, campaign.id, {
+			let p2Roster: Roster;
+			if (opponentType === 'roster' && selectedOpponentRoster) {
+				p2Roster = selectedOpponentRoster;
+			} else {
+				const now = new Date().toISOString();
+				const entries = wildMonsterIds.map((characterId) => ({
+					entryId: newId(),
+					characterId,
+					equippedUpgradeIds: [],
+					entryInfluence: collectionStore.getCharacter(characterId)?.cost ?? 0
+				}));
+				p2Roster = {
+					id: newId(),
+					name: 'Wild Monsters',
+					faction: '',
+					limitMode: 'threat',
+					maxInfluence: 0,
+					entries,
+					totalInfluence: entries.reduce((sum, e) => sum + e.entryInfluence, 0),
+					createdAt: now,
+					updatedAt: now
+				};
+			}
+			const game = await gameStore.start(roster, p2Roster, true, campaign.id, {
 				threatLevel,
 				scenarioId: scenarioId ?? undefined,
 				environmentId: environmentId ?? undefined
@@ -230,45 +244,92 @@
 					{/if}
 				</section>
 			{:else if step === 4}
-				<!-- Step 5: Wild monsters -->
-				<section class="space-y-3">
-					<h2 class="text-sm font-semibold uppercase tracking-wider text-on-muted">Wild Monsters</h2>
-					<p class="text-sm text-on-muted">
-						Add the wild monsters for this adventure from your collection. Add the same character
-						more than once for multiple copies.
-					</p>
-					{#if wildMonsterIds.length > 0}
-						<ul class="space-y-2">
-							{#each wildMonsterIds as characterId, i (i)}
-								{@const character = collectionStore.getCharacter(characterId)}
-								<li class="card flex items-center justify-between gap-3">
-									<p class="truncate text-sm font-medium">{character?.name ?? 'Unknown character'}</p>
-									<button
-										type="button"
-										onclick={() => removeWildMonster(i)}
-										class="shrink-0 text-on-muted hover:text-on-surface"
-										aria-label="Remove"
-									>
-										✕
-									</button>
-								</li>
-							{/each}
-						</ul>
+				<!-- Step 5: Opponent -->
+				<section class="space-y-4">
+					<h2 class="text-sm font-semibold uppercase tracking-wider text-on-muted">Opponent</h2>
+
+					<!-- Type toggle -->
+					<div class="flex gap-2">
+						{#each (['monsters', 'roster'] as const) as t}
+							<button
+								type="button"
+								onclick={() => { opponentType = t; opponentRosterId = null; }}
+								class="flex-1 rounded-lg py-2 text-sm font-medium transition-colors
+									{opponentType === t
+									? 'bg-accent text-white'
+									: 'bg-surface-overlay text-on-muted hover:bg-white/10'}"
+								aria-pressed={opponentType === t}
+							>
+								{t === 'monsters' ? 'Wild Monsters' : 'Player Roster'}
+							</button>
+						{/each}
+					</div>
+
+					{#if opponentType === 'monsters'}
+						<p class="text-sm text-on-muted">
+							Add the wild monsters from your collection. You can add the same character more than once.
+						</p>
+						{#if wildMonsterIds.length > 0}
+							<ul class="space-y-2">
+								{#each wildMonsterIds as characterId, i (i)}
+									{@const character = collectionStore.getCharacter(characterId)}
+									<li class="card flex items-center justify-between gap-3">
+										<p class="truncate text-sm font-medium">{character?.name ?? 'Unknown character'}</p>
+										<button
+											type="button"
+											onclick={() => removeWildMonster(i)}
+											class="shrink-0 text-on-muted hover:text-on-surface"
+											aria-label="Remove"
+										>✕</button>
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="text-sm text-on-muted">No wild monsters added yet.</p>
+						{/if}
+						<Button variant="ghost" onclick={() => (showMonsterPicker = true)}>+ Add wild monster</Button>
 					{:else}
-						<p class="text-sm text-on-muted">No wild monsters added yet.</p>
+						<p class="text-sm text-on-muted">
+							Select a saved roster as the opponent (Player 2).
+						</p>
+						{#if availableOpponentRosters.length === 0}
+							<p class="text-sm text-on-muted">
+								No other rosters available. <a href="{base}/roster/new" class="text-accent">Create one</a> first.
+							</p>
+						{:else}
+							<div class="space-y-2">
+								{#each availableOpponentRosters as r (r.id)}
+									<label class="card flex items-center gap-3">
+										<input
+											type="radio"
+											name="opponentRoster"
+											checked={opponentRosterId === r.id}
+											onchange={() => (opponentRosterId = r.id)}
+										/>
+										<div class="min-w-0">
+											<p class="truncate text-sm font-medium">{r.name}</p>
+											<p class="text-xs text-on-muted">{r.entries.length} models · {r.totalInfluence} pts</p>
+										</div>
+									</label>
+								{/each}
+							</div>
+						{/if}
 					{/if}
-					<Button variant="ghost" onclick={() => (showMonsterPicker = true)}>+ Add wild monster</Button>
 				</section>
 			{:else if step === 5}
 				<!-- Step 6: Review -->
 				<section class="space-y-3">
 					<h2 class="text-sm font-semibold uppercase tracking-wider text-on-muted">Review</h2>
 					<div class="card space-y-2 text-sm">
-						<p><span class="text-on-muted">Roster:</span> {roster.name}</p>
+						<p><span class="text-on-muted">Roster (P1):</span> {roster.name}</p>
 						<p><span class="text-on-muted">Threat level:</span> {threatLevel}</p>
 						<p><span class="text-on-muted">Scenario:</span> {selectedScenario?.name ?? 'None'}</p>
 						<p><span class="text-on-muted">Environment:</span> {selectedEnvironment?.name ?? 'None'}</p>
-						<p><span class="text-on-muted">Wild monsters:</span> {wildMonsterIds.length}</p>
+						{#if opponentType === 'roster'}
+							<p><span class="text-on-muted">Opponent (P2):</span> {selectedOpponentRoster?.name ?? '—'}</p>
+						{:else}
+							<p><span class="text-on-muted">Wild monsters:</span> {wildMonsterIds.length}</p>
+						{/if}
 					</div>
 					<p class="text-sm text-on-muted">
 						Starting the game hands off to the Game Manager for play.
