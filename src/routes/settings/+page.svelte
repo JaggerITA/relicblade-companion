@@ -44,7 +44,7 @@
 					: `${daysSince} days ago`
 	);
 
-	function handleExport() {
+	async function handleExport() {
 		const data = {
 			...collectionStore.exportCollection(),
 			rosters: $state.snapshot(rosterStore.rosters),
@@ -53,7 +53,23 @@
 			scenarios: $state.snapshot(scenarioStore.scenarios),
 			environments: $state.snapshot(environmentStore.environments)
 		};
-		downloadCollection(data);
+
+		const filename = `relicblade-backup-${new Date().toISOString().slice(0, 10)}.json`;
+		const json = JSON.stringify(data, null, 2);
+		const file = new File([json], filename, { type: 'application/json' });
+
+		if (navigator.canShare?.({ files: [file] })) {
+			try {
+				await navigator.share({ files: [file], title: 'Relicblade Backup' });
+			} catch (err) {
+				if (err instanceof Error && err.name !== 'AbortError') {
+					downloadCollection(data);
+				}
+			}
+		} else {
+			downloadCollection(data);
+		}
+
 		lastBackupDate = new Date().toISOString();
 		toastStore.success('Backup exported successfully');
 	}
