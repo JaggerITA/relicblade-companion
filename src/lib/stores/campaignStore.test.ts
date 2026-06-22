@@ -73,6 +73,7 @@ function makeCampaign(overrides: Partial<Campaign> = {}): Campaign {
 		pathAlignment: 'advocate',
 		influence: 0,
 		gold: 0,
+		valor: 0,
 		specialists: [],
 		characterStates: [],
 		matches: [],

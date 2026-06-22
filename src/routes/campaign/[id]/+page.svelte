@@ -130,6 +130,7 @@
 		});
 		if (template.startingInfluence) await campaignStore.adjustInfluence(campaign.id, template.startingInfluence);
 		if (template.startingGold) await campaignStore.adjustGold(campaign.id, template.startingGold);
+		if (template.startingValor) await campaignStore.adjustValorPool(campaign.id, template.startingValor);
 		showBaseModal = false;
 		toastStore.success(`${template.name} established`);
 	}
@@ -158,6 +159,7 @@
 			});
 			if (baseStartingInfluence) await campaignStore.adjustInfluence(campaign.id, baseStartingInfluence);
 			if (baseStartingGold) await campaignStore.adjustGold(campaign.id, baseStartingGold);
+			if (baseStartingValor) await campaignStore.adjustValorPool(campaign.id, baseStartingValor);
 		}
 		showBaseModal = false;
 	}
@@ -237,7 +239,7 @@
 
 				<!-- Resources -->
 				<div class="card mb-2">
-					<div class="grid grid-cols-2 gap-3">
+					<div class="grid grid-cols-3 gap-3">
 						<div>
 							<p class="text-xs text-on-muted">Influence budget</p>
 							<div class="mt-1 flex items-center gap-2">
@@ -252,6 +254,14 @@
 								<Button variant="ghost" onclick={() => campaignStore.adjustGold(campaign.id, -1)}>−</Button>
 								<span class="w-8 text-center text-lg font-semibold text-accent">{campaign.gold}</span>
 								<Button variant="ghost" onclick={() => campaignStore.adjustGold(campaign.id, 1)}>+</Button>
+							</div>
+						</div>
+						<div>
+							<p class="text-xs text-on-muted">Valor pool</p>
+							<div class="mt-1 flex items-center gap-2">
+								<Button variant="ghost" onclick={() => campaignStore.adjustValorPool(campaign.id, -1)}>−</Button>
+								<span class="w-8 text-center text-lg font-semibold text-accent">{campaign.valor ?? 0}</span>
+								<Button variant="ghost" onclick={() => campaignStore.adjustValorPool(campaign.id, 1)}>+</Button>
 							</div>
 						</div>
 					</div>

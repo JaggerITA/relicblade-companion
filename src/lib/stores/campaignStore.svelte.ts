@@ -87,6 +87,7 @@ function createCampaignStore() {
 		// Normalize per-character states so fields added later (status/kills/…) are always present.
 		campaigns = raw.map((c) => ({
 			...c,
+			valor: c.valor ?? 0,
 			characterStates: (c.characterStates ?? []).map(normalizeState),
 			matches: (c.matches ?? []).map((m) => ({
 				...m,
@@ -131,6 +132,7 @@ function createCampaignStore() {
 			pathAlignment,
 			influence: Math.max(0, startingInfluence),
 			gold: 0,
+			valor: 0,
 			specialists: [],
 			characterStates: [],
 			matches: [],
@@ -202,6 +204,12 @@ function createCampaignStore() {
 		const campaign = getCampaign(id);
 		if (!campaign) return;
 		await persist({ ...campaign, gold: Math.max(0, campaign.gold + delta) });
+	}
+
+	async function adjustValorPool(id: string, delta: number): Promise<void> {
+		const campaign = getCampaign(id);
+		if (!campaign) return;
+		await persist({ ...campaign, valor: Math.max(0, (campaign.valor ?? 0) + delta) });
 	}
 
 	async function recruitSpecialist(id: string, type: SpecialistType, influenceCost: number): Promise<void> {
@@ -401,6 +409,7 @@ function createCampaignStore() {
 		setBase,
 		adjustInfluence,
 		adjustGold,
+		adjustValorPool,
 		recruitSpecialist,
 		advanceSpecialist,
 		removeSpecialist,

@@ -144,6 +144,8 @@ export interface Campaign {
 	/** Shared encampment pools (Seeker's Handbook p.50-51) */
 	influence: number;
 	gold: number;
+	/** Valor pool — starting valor from the base is stored here; players distribute it to characters manually. */
+	valor: number;
 	specialists: Specialist[];
 	/** Persistent per-character progression, carried between adventures */
 	characterStates: CharacterCampaignState[];
